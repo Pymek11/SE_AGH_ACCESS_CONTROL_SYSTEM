@@ -1,0 +1,12 @@
+/* Placeholder stylesheet for SE AGH Access Control System */
+:root{
+  --bg: #f7f8fa;
+  --text: #111827;
+  --accent: #0b5fff;
+}
+html,body{height:100%;}
+body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:var(--text);}
+
+#app{display:flex;align-items:center;justify-content:center;height:100%;}
+
+/* Add component styles here */

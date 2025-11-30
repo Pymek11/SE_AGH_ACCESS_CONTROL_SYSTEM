@@ -1,3 +1,34 @@
+# SE_AGH_ACCESS_CONTROL_SYSTEM
+
+This repository contains a minimal Local Web Application for a QR and Biometrics-based Access Control System (prototype).
+
+Run instructions (Windows):
+
+1. Create and activate a Python 3.10+ virtual environment:
+
+```cmd
+python -m venv .venv
+.\.venv\Scripts\activate
+```
+
+2. Install dependencies:
+
+```cmd
+pip install -r requirements.txt
+```
+
+3. Start the server:
+
+```cmd
+python -m app.main
+```
+
+4. Open a browser and go to `http://localhost:8000` (use Chrome/Edge in kiosk mode if desired).
+
+Notes:
+- The app streams MJPEG to the frontend from your default camera. Ensure the camera is accessible.
+- `face_recognition` requires `dlib` and may need build tools on Windows. See its project docs if installation fails.
+
 # Access Control System Specification: Technology Stack
 
 This document specifies the architecture and core technologies selected for the QR and Biometrics-based Access Control System.

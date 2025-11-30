@@ -1,0 +1,7 @@
+# Add runtime dependencies here, e.g.:
+# fastapi
+# uvicorn[standard]
+# sqlalchemy
+# opencv-python
+# face_recognition
+# pyzbar
