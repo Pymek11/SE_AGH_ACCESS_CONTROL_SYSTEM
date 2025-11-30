@@ -1,7 +1,8 @@
-# Add runtime dependencies here, e.g.:
-# fastapi
-# uvicorn[standard]
-# sqlalchemy
-# opencv-python
+# Runtime dependencies (add as needed)
+fastapi>=0.95
+uvicorn[standard]
+SQLAlchemy>=1.4
+opencv-python
+# face_recognition may require system build tools on Windows
 # face_recognition
-# pyzbar
+pyzbar
