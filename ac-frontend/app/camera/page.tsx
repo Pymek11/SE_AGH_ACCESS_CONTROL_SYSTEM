@@ -18,7 +18,7 @@ export default function CameraPage() {
 
     if (text) {
       console.log("Scanned QR Code:", text);
-      // You can add further processing of the scanned result here
+      
     }
   };
 
@@ -66,8 +66,23 @@ export default function CameraPage() {
     }
   };
 
+  const styles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column' as 'column',
+      alignItems: 'center',
+      gap: '1rem',
+    },
+    video: {
+      width: '100%',
+      maxWidth: '400px',
+      border: '1px solid black',
+    },
+  };
+
  return (
-    <div>
+  <main style={styles.container}>
+    <div style={styles.video}>
       <select value={selectedDeviceId ?? ''} onChange={(e) => setSelectedDeviceId(e.target.value)}>
         <option value="">Select a camera</option>
         {devices.map((device, i) => (
@@ -80,8 +95,12 @@ export default function CameraPage() {
       <Scanner
         onScan={handleScan}
         onError={handleError}
-        constraints={selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : { facingMode: 'environment' }}
+        constraints={{
+          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+          facingMode: selectedDeviceId ? undefined : 'environment',
+        }}
       />
     </div>
+    </main>
   );
 }
