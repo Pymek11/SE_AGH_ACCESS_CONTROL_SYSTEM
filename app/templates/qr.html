@@ -20,27 +20,24 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Camera View</h5>
+                    <h5 class="mb-0">Camera View (Server Stream)</h5>
                     <div class="status text-muted" id="status">Idle</div>
                 </div>
 
-                <video id="video" autoplay playsinline></video>
+                <!-- Use an <img> to render the MJPEG stream served by the backend -->
+                <img id="stream" alt="video stream" style="width:100%; height:auto; background:#000; border-radius:6px;" />
                 <canvas id="canvas" style="display:none;"></canvas>
-                <img id="snapshot" alt="snapshot" />
+                <img id="snapshot" alt="snapshot" style="display:none; margin-top:12px;" />
 
                 <div class="d-flex flex-wrap gap-2 align-items-center mt-3 controls">
                     <div class="btn-group">
-                        <button id="startBtn" class="btn btn-primary">Start Camera</button>
-                        <button id="stopBtn" class="btn btn-outline-secondary" disabled>Stop Camera</button>
+                        <button id="startBtn" class="btn btn-primary">Start Stream</button>
+                        <button id="stopBtn" class="btn btn-outline-secondary" disabled>Stop Stream</button>
                     </div>
                     <button id="captureBtn" class="btn btn-success">Take Snapshot</button>
                     <button id="downloadBtn" class="btn btn-outline-success" disabled>Download</button>
                     <div class="ms-auto d-flex align-items-center gap-2">
-                        <select id="deviceSelect" class="form-select device-list" aria-label="Camera device"></select>
-                        <div class="form-check form-switch ms-2">
-                            <input class="form-check-input" type="checkbox" id="sendWS">
-                            <label class="form-check-label" for="sendWS">Send via WebSocket</label>
-                        </div>
+                        <div class="text-muted" style="font-size:0.9rem;">Source: <code>/video_feed</code></div>
                     </div>
                 </div>
             </div>
@@ -48,89 +45,62 @@
     </div>
 
     <script>
-        const video = document.getElementById('video');
+        const streamImg = document.getElementById('stream');
         const canvas = document.getElementById('canvas');
         const snapshotImg = document.getElementById('snapshot');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const captureBtn = document.getElementById('captureBtn');
         const downloadBtn = document.getElementById('downloadBtn');
-        const deviceSelect = document.getElementById('deviceSelect');
         const statusEl = document.getElementById('status');
-        const sendWSCheckbox = document.getElementById('sendWS');
-
-        let currentStream = null;
-        let ws = null;
-        let sendInterval = null;
 
         function setStatus(text, warn=false) {
             statusEl.textContent = text;
             statusEl.style.color = warn ? '#d63384' : '';
         }
 
-        async function enumerateCameras() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const cams = devices.filter(d => d.kind === 'videoinput');
-                deviceSelect.innerHTML = '';
-                cams.forEach((cam, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = cam.deviceId;
-                    opt.text = cam.label || `Camera ${i+1}`;
-                    deviceSelect.appendChild(opt);
-                });
-            } catch (e) {
-                console.error('enumerateDevices error', e);
-            }
-        }
+        startBtn.addEventListener('click', () => {
+            // Point to the backend MJPEG endpoint
+            streamImg.src = '/video_feed';
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            setStatus('Streaming from server');
+        });
 
-        async function startCamera(deviceId) {
-            stopCamera();
-            const constraints = {
-                video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } },
-                audio: false
-            };
-
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-                stopBtn.disabled = false;
-                startBtn.disabled = true;
-                setStatus('Camera running');
-                await enumerateCameras();
-            } catch (err) {
-                console.error(err);
-                setStatus('Camera error: ' + err.message, true);
-            }
-        }
-
-        function stopCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(t => t.stop());
-                currentStream = null;
-            }
-            video.srcObject = null;
+        stopBtn.addEventListener('click', () => {
+            streamImg.src = '';
             stopBtn.disabled = true;
             startBtn.disabled = false;
             setStatus('Idle');
-            stopSending();
-        }
+        });
+
+        streamImg.addEventListener('error', () => {
+            setStatus('Stream error or backend not available', true);
+        });
+
+        streamImg.addEventListener('load', () => {
+            // When the first frame loads
+            setStatus('Streaming from server');
+        });
 
         function takeSnapshot() {
-            if (!video.videoWidth) {
-                setStatus('No video available', true);
+            if (!streamImg.naturalWidth) {
+                setStatus('No stream frame available', true);
                 return;
             }
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            canvas.width = streamImg.naturalWidth;
+            canvas.height = streamImg.naturalHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(streamImg, 0, 0, canvas.width, canvas.height);
             const dataUrl = canvas.toDataURL('image/png');
             snapshotImg.src = dataUrl;
             snapshotImg.style.display = 'block';
             downloadBtn.disabled = false;
+            setStatus('Snapshot taken');
             return dataUrl;
         }
+
+        captureBtn.addEventListener('click', () => takeSnapshot());
 
         downloadBtn.addEventListener('click', () => {
             const url = snapshotImg.src;
@@ -142,75 +112,6 @@
             a.click();
             a.remove();
         });
-
-        captureBtn.addEventListener('click', () => {
-            takeSnapshot();
-        });
-
-        startBtn.addEventListener('click', () => {
-            const deviceId = deviceSelect.value || undefined;
-            startCamera(deviceId);
-        });
-
-        stopBtn.addEventListener('click', stopCamera);
-
-        deviceSelect.addEventListener('change', () => {
-            if (deviceSelect.value) startCamera(deviceSelect.value);
-        });
-
-        async function startSending() {
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                // change URL if needed
-                ws = new WebSocket('ws://localhost:8000');
-            }
-
-            ws.onopen = () => {
-                setStatus('WebSocket connected — sending frames');
-                // send a reduced-size frame periodically (~10fps)
-                sendInterval = setInterval(() => {
-                    if (!video.videoWidth) return;
-                    canvas.width = Math.floor(video.videoWidth * 0.5);
-                    canvas.height = Math.floor(video.videoHeight * 0.5);
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const frame = canvas.toDataURL('image/jpeg', 0.6);
-                    try { ws.send(frame); } catch (e) { console.warn('ws send failed', e); }
-                }, 100);
-            };
-
-            ws.onclose = () => { setStatus('WebSocket closed'); stopSending(); };
-            ws.onerror = (e) => { console.error('ws error', e); setStatus('WS error', true); };
-        }
-
-        function stopSending() {
-            if (sendInterval) { clearInterval(sendInterval); sendInterval = null; }
-            if (ws) { try { ws.close(); } catch (e) {} ws = null; }
-        }
-
-        sendWSCheckbox.addEventListener('change', () => {
-            if (sendWSCheckbox.checked) {
-                if (!currentStream) {
-                    setStatus('Start camera first', true);
-                    sendWSCheckbox.checked = false;
-                    return;
-                }
-                startSending();
-            } else {
-                stopSending();
-                setStatus('Camera running');
-            }
-        });
-
-        // Try to populate devices on load
-        (async function init() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                setStatus('getUserMedia not supported', true);
-                return;
-            }
-            try {
-                await enumerateCameras();
-            } catch (e) { console.warn(e); }
-        })();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
