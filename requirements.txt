@@ -1,4 +1,4 @@
-# Add runtime dependencies here, e.g.:
+# Add runtime dependencies here, e.g.:k
  fastapi
  uvicorn[standard]
  sqlalchemy

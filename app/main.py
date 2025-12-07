@@ -1,7 +1,3 @@
-"""Entry point for the application (minimal DB table creation).
-
-Run instructions are described in the repository README.
-"""
 from app.api.routes import router
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
