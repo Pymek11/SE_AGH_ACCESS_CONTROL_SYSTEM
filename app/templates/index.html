@@ -1,15 +1,126 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SE AGH Access Control</title>
-  <link rel="stylesheet" href="/static/css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Control System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-  <div id="app">
-    <!-- Frontend placeholder: add video, controls, and status UI here. -->
-  </div>
-  <script src="/static/js/main.js"></script>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="#">
+          <i class="fas fa-lock me-2"></i>Access Control System
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="/">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/login">Login</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section bg-gradient text-white py-5">
+      <div class="container py-5">
+        <div class="row align-items-center">
+          <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-4">Secure Access Control</h1>
+            <a class="btn btn-primary btn-lg me-3" href="/qr">Start</a>
+            <button id="dashboardBtn" class="btn btn-outline-light btn-lg" style="display:none;">Dashboard</button>
+            <script>
+              // Example: Replace with your actual login check logic
+              // For Flask, you might pass a variable like `is_logged_in` from your backend
+              {% if is_logged_in %}
+              document.addEventListener("DOMContentLoaded", function() {
+                document.getElementById("dashboardBtn").style.display = "inline-block";
+              });
+              {% endif %}
+            </script>
+          </div>
+          <div class="col-lg-6 text-center">
+            <div class="display-1 text-primary">
+              <i class="fas fa-qrcode"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5 bg-light">
+      <div class="container">
+        <h2 class="text-center mb-5 fw-bold">Key Features</h2>
+        <div class="row g-4">
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card card border-0 shadow-sm h-100">
+              <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                  <i class="fas fa-qrcode fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">QR Code Generation</h5>
+                <p class="card-text">Automatically generate and manage QR codes for secure access.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card card border-0 shadow-sm h-100">
+              <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                  <i class="fas fa-video fa-3x text-success"></i>
+                </div>
+                <h5 class="card-title">Video Integration</h5>
+                <p class="card-text">Real-time video monitoring and recording capabilities.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <div class="feature-card card border-0 shadow-sm h-100">
+              <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                  <i class="fas fa-database fa-3x text-warning"></i>
+                </div>
+                <h5 class="card-title">Database Management</h5>
+                <p class="card-text">Robust database system for storing access logs.</p>
+              </div>
+            </div>
+          </div>              
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+   
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white py-4">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4 mb-3 mb-md-0">
+            <h6 class="fw-bold mb-3">Access Control System</h6>
+          </div>
+          
+        <hr class="my-3 border-secondary">
+        <div class="text-center small text-white-50">
+          <p>&copy; 2025 Access Control System. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
