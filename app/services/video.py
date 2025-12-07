@@ -9,6 +9,19 @@ from pyzbar.pyzbar import decode
 from sqlalchemy import text
 from app.core.database import SessionLocal
 
+# Global state for video capture
+_cap = None
+_last_detection_time = 0
+
+def initialize_camera():
+    global _cap
+    if _cap is None:
+        _cap = cv2.VideoCapture(0)
+    if not _cap.isOpened():
+        print("Error: Could not open video device.")
+        _cap = None
+        return None
+    return _cap
 
 def find_employee_by_qr_data(qr_text: str) -> str:
     db = SessionLocal()
@@ -24,7 +37,6 @@ def find_employee_by_qr_data(qr_text: str) -> str:
     finally:
         db.close()
 
-
 def process_qr_code(frame):
     employee_name = None
     
@@ -32,7 +44,6 @@ def process_qr_code(frame):
     
     for obj in decoded_objects:
         qr_text = obj.data.decode('utf-8')
-        
         employee_name = find_employee_by_qr_data(qr_text)
         
         pts = obj.polygon
@@ -49,28 +60,39 @@ def process_qr_code(frame):
     
     return employee_name, frame
 
-
-cap = cv2.VideoCapture(0)
-
-print("Starting QR Scanner (press 'q' to exit)...")
-
-last_detection_time = 0
-
-while True:
-    success, img = cap.read()
-    if not success:
-        break
-
-    employee_name, annotated_frame = process_qr_code(img)
+def generate_frame():
+    global _last_detection_time
+    cap = initialize_camera()
     
-    current_time = time.time()
-    if employee_name and employee_name != "Not Found" and (current_time - last_detection_time) > 1:
-        print(f"✓ QR Detected: {employee_name}")
-        last_detection_time = current_time
-    
-    cv2.imshow("QR Scanner", annotated_frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    if cap is None:
+        error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        cv2.putText(error_frame, "Camera not available", (50, 240),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        ret, buffer = cv2.imencode('.jpg', error_frame)
+        frame = buffer.tobytes()
+        while True:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            
+    try:
+        while True:
+            success, img = cap.read()
+            if not success:
+                break
 
-cap.release()
-cv2.destroyAllWindows()
+            employee_name, annotated_frame = process_qr_code(img)
+            
+            # Log detection
+            current_time = time.time()
+            if employee_name and employee_name != "Not Found" and (current_time - _last_detection_time) > 1:
+                print(f"✓ QR Detected: {employee_name}")
+                _last_detection_time = current_time
+            
+            # Encode frame for streaming
+            ret, buffer = cv2.imencode('.jpg', annotated_frame)
+            frame = buffer.tobytes()
+            
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    except Exception as e:
+        print(f"Error during video processing: {e}")

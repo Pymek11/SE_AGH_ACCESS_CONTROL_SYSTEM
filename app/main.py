@@ -9,13 +9,13 @@ import app.models.qr_image  # noqa: F401
 
 
 @asynccontextmanager
-async def main(app: FastAPI) -> None:
+async def lifespan(app: FastAPI) -> None:
 	"""Create database tables and exit."""
 	Base.metadata.create_all(bind=engine)
 	print("Database tables created (if not existing) in `access_control.db`")
 	yield
 
-app = FastAPI(title="SE AGH Access Control System", lifespan=main)
+app = FastAPI(title="SE AGH Access Control System", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(router)
 
