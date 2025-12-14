@@ -15,13 +15,14 @@
       margin: 32px auto;
     }
 
+    /* Shadow only around video */
     .video-wrapper {
       position: relative;
       width: 100%;
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
       background: #000;
+      /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); */ 
     }
 
     #stream {
@@ -30,34 +31,13 @@
       display: block;
     }
 
-    /* QR overlay */
-    .qr-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 45%;
-      aspect-ratio: 1 / 1;
-      transform: translate(-50%, -50%);
-      border: 3px solid #0d6efd;
-      border-radius: 8px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
-      pointer-events: none;
-    }
+    /* Face overlay */
 
-    /* Scan line */
-    .qr-overlay::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: #0d6efd;
-    }
 
-    @keyframes scan {
-      0%   { top: 0; }
-      50%  { top: calc(100% - 2px); }
-      100% { top: 0; }
+    @keyframes face-scan {
+      0%   { top: 8%; }
+      50%  { top: calc(100% - 12%); }
+      100% { top: 8%; }
     }
 
     .status {
@@ -68,29 +48,29 @@
 
 <body>
   <div class="container camera-card">
-
-    <!-- No shadow here -->
     <div class="card border-0">
       <div class="card-body">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">Camera View (QR Scanner)</h5>
+          <h5 class="mb-0">Camera View (Face Recognition)</h5>
           <div class="status text-muted" id="status">Connecting…</div>
         </div>
 
-        <!-- Shadow only around stream -->
         <div class="video-wrapper">
           <img id="stream" src="/video_feed" alt="video stream">
-          <div class="qr-overlay"></div>
+
+          <!-- Face recognition overlay -->
+          <div class="face-overlay">
+            <div class="eye-line"></div>
+          </div>
         </div>
 
         <div class="mt-2 text-muted" style="font-size:0.9rem;">
-          Align QR code within the square
+          Center your face inside the frame
         </div>
 
       </div>
     </div>
-
   </div>
 
   <script>
