@@ -9,6 +9,15 @@ router = APIRouter()
 async def read_root():
     return FileResponse('app/templates/index.html')
 
+
+@router.get('/login')
+async def read_login():
+    return FileResponse('app/templates/login.html')
+
+@router.get('/qr')
+async def read_qr():
+    return FileResponse('app/templates/qr.html')
+
 @router.get('/video_feed')
 async def video_feed():
     # Check if camera is available before streaming
@@ -20,3 +29,4 @@ async def video_feed():
         generate_frame(),
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
+

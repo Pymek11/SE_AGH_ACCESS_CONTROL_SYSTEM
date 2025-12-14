@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camera - Access Control</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f8f9fa; }
+
+    .camera-card {
+      max-width: 900px;
+      margin: 32px auto;
+    }
+
+    /* Shadow only around video */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+      /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); */ 
+    }
+
+    #stream {
+      width: 100%;
+      height: 1024px;
+      display: block;
+    }
+
+    /* Face overlay */
+
+
+    @keyframes face-scan {
+      0%   { top: 8%; }
+      50%  { top: calc(100% - 12%); }
+      100% { top: 8%; }
+    }
+
+    .status {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container camera-card">
+    <div class="card border-0">
+      <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Camera View (Face Recognition)</h5>
+          <div class="status text-muted" id="status">Connecting…</div>
+        </div>
+
+        <div class="video-wrapper">
+          <img id="stream" src="/video_feed" alt="video stream">
+
+          <!-- Face recognition overlay -->
+          <div class="face-overlay">
+            <div class="eye-line"></div>
+          </div>
+        </div>
+
+        <div class="mt-2 text-muted" style="font-size:0.9rem;">
+          Center your face inside the frame
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const streamImg = document.getElementById('stream');
+    const statusEl = document.getElementById('status');
+
+    function setStatus(text, warn = false) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle('text-danger', warn);
+      statusEl.classList.toggle('text-muted', !warn);
+    }
+
+    streamImg.addEventListener('load', () => {
+      setStatus('Live');
+    });
+
+    streamImg.addEventListener('error', () => {
+      setStatus('Stream unavailable', true);
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
