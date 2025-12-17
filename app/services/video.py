@@ -65,7 +65,7 @@ def generate_frame():
     cap = initialize_camera()
     
     if cap is None:
-        error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        error_frame = np.zeros((480, 480, 3), dtype=np.uint8)
         cv2.putText(error_frame, "Camera not available", (50, 240),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         ret, buffer = cv2.imencode('.jpg', error_frame)
