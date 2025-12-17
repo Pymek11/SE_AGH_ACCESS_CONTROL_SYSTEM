@@ -30,3 +30,6 @@ async def video_feed():
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
 
+@router.get('/dashboard')
+async def read_dashboard():
+    return FileResponse('app/templates/dashboard.html')
