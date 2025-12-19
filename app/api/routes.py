@@ -1,3 +1,6 @@
+from fastapi import APIRouter
+from fastapi.responses import FileResponse, StreamingResponse
+from app.services.video import generate_frame, generate_face_frame, initialize_camera
 from fastapi import APIRouter, Response
 from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from app.services.video import generate_frame, initialize_camera, get_verification_status, reset_verification_status
@@ -18,6 +21,11 @@ async def read_login():
 async def read_qr():
     return FileResponse('app/templates/qr.html')
 
+
+@router.get('/facerec')
+async def read_facerec():
+    return FileResponse('app/templates/facerec.html')
+
 @router.get('/video_feed')
 async def video_feed():
     # Check if camera is available before streaming
@@ -27,6 +35,18 @@ async def video_feed():
     
     return StreamingResponse(
         generate_frame(),
+        media_type='multipart/x-mixed-replace; boundary=frame'
+    )
+
+
+@router.get('/face_feed')
+async def face_feed():
+    cap = initialize_camera()
+    if cap is None:
+        raise HTTPException(status_code=503, detail="Camera not available")
+
+    return StreamingResponse(
+        generate_face_frame(),
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
 

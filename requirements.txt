@@ -2,7 +2,7 @@
  fastapi
  uvicorn[standard]
  sqlalchemy
- opencv-python
+ opencv-contrib-python
  face_recognition
  pyzbar
  qrcode[pil]
