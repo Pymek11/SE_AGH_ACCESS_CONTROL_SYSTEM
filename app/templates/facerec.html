@@ -6,43 +6,9 @@
   <title>Camera - Access Control</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
 
-  <style>
-
-    .camera-card {
-      max-width: 900px;
-      margin: 32px auto;
-    }
-
-    /* Shadow only around video */
-    .video-wrapper {
-      position: relative;
-      width: 100%;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #000;
-      /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); */ 
-    }
-
-    #stream {
-      width: 100%;
-      height: 1024px;
-      display: block;
-    }
-
-    /* Face overlay */
-
-
-    @keyframes face-scan {
-      0%   { top: 8%; }
-      50%  { top: calc(100% - 12%); }
-      100% { top: 8%; }
-    }
-
-    .status {
-      font-size: 0.9rem;
-    }
-  </style>
+  
 </head>
 
 <body class="bg-dark text-white">
