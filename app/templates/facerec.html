@@ -89,6 +89,15 @@
     streamImg.addEventListener('error', () => {
       setStatus('Stream unavailable', true);
     });
+    async function waitForServerAndRedirect() {
+      const response = await fetch('/api/face-status');
+
+      if (response.ok) {
+        setStatus('Face recognized! Access granted.');
+        window.location.href = 'http://localhost:8000/qr';
+      }
+    }
+    setInterval(waitForServerAndRedirect, 500);
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

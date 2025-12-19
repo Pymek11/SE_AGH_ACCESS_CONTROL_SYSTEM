@@ -121,6 +121,7 @@
       const response = await fetch('/api/qr-status');
 
       if (response.ok) {
+        alert('QR code recognized');
         window.location.href = 'http://localhost:8000/facerec';
       }
     }
