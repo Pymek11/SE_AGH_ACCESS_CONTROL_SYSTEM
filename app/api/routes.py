@@ -1,6 +1,9 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse, StreamingResponse
 from app.services.video import generate_frame, generate_face_frame, initialize_camera
+from fastapi import APIRouter, Response
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from app.services.video import generate_frame, initialize_camera, get_verification_status, reset_verification_status
 from fastapi import HTTPException
 
 router = APIRouter()
@@ -50,3 +53,30 @@ async def face_feed():
 @router.get('/dashboard')
 async def read_dashboard():
     return FileResponse('app/templates/dashboard.html')
+
+@router.get('/facerec')
+async def read_facerec():
+    return FileResponse('app/templates/facerec.html')
+
+@router.get('/api/qr-status')
+async def qr_verification_status():
+    status = get_verification_status()
+    if status["verified"]:
+        response = Response(status_code=200)
+        print(f"✓ QR Verification Status: {status}")
+    return response
+
+@router.post('/api/qr-reset')
+async def qr_reset():
+    reset_verification_status()
+    return {"success": True, "message": "QR status reset"}
+
+# @router.get('/api/face-status')
+# async def face_status():
+#     status = get_face_verification_status()
+#     return status
+
+# @router.post('/api/face-reset')
+# async def face_reset():
+#     reset_face_verification_status()
+#     return {"success": True, "message": "Face status reset"}

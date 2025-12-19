@@ -17,6 +17,8 @@ _last_detection_time = 0
 _face_model = None  # (recognizer, known_names)
 _face_model_loaded_at = 0.0
 _last_face_log_time = 0.0
+_qr_verified = False
+_verified_employee = None
 
 def initialize_camera():
     global _cap
@@ -43,6 +45,7 @@ def find_employee_by_qr_data(qr_text: str) -> str:
         db.close()
 
 def process_qr_code(frame):
+    global _qr_verified, _verified_employee 
     employee_name = None
     
     decoded_objects = decode(frame)
@@ -50,6 +53,10 @@ def process_qr_code(frame):
     for obj in decoded_objects:
         qr_text = obj.data.decode('utf-8')
         employee_name = find_employee_by_qr_data(qr_text)
+
+        if employee_name and employee_name != "Not Found":
+            _qr_verified = True
+            _verified_employee = employee_name
         
         pts = obj.polygon
         if pts:
@@ -185,3 +192,15 @@ def generate_face_frame():
             time.sleep(0.03)
     except Exception as e:
         print(f"Error during face video processing: {e}")
+def get_verification_status():
+    global _qr_verified, _verified_employee
+    return {
+        "verified": _qr_verified,
+        "employee": _verified_employee
+    }
+
+def reset_verification_status():
+    global _qr_verified, _verified_employee
+    _qr_verified = False
+    _verified_employee = None
+
