@@ -94,7 +94,7 @@
 
       if (response.ok) {
         setStatus('Face recognized! Access granted.');
-        window.location.href = 'http://localhost:8000/qr';
+        window.location.href = 'http://localhost:8000/accessgranted';
       }
     }
     setInterval(waitForServerAndRedirect, 500);

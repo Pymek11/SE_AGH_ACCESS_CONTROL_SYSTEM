@@ -137,6 +137,10 @@ async def face_reset():
     reset_face_verification_status()
     return {"success": True, "message": "Face status reset"}
 
+@router.get('/accessgranted')
+async def read_accessgranted():
+    return FileResponse('app/templates/accessgranted.html')
+
 
 # @router.get("/redirect")
 # async def redirectface():
