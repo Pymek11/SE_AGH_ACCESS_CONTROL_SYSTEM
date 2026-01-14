@@ -4,6 +4,9 @@ from sqlalchemy import insert, text  # ✅ Jeden import, usuń duplikat
 from app.core.database import SessionLocal
 from app.models.qr_image import employees
 from app.services.qr_generator import generate_qr_code_blob
+from app.services.facial_recognition import FACE_CASCADE, save_face_to_db
+import cv2
+import numpy as np
 import base64
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -101,7 +104,6 @@ async def list_users(authorization: str = Header(None)):
     db = SessionLocal()
     
     try:
-        # ✅ Zmienione: emp_id zamiast id
         result = db.execute(text("SELECT emp_id, emp_name FROM employees")).fetchall()
         users = [{"id": row[0], "name": row[1]} for row in result]  # Zwróć jako 'id' dla JS
         
@@ -123,7 +125,6 @@ async def delete_user(user_id: int, authorization: str = Header(None)):
     db = SessionLocal()
     
     try:
-        # ✅ Zmienione: emp_id zamiast id
         db.execute(text("DELETE FROM employees WHERE emp_id = :id"), {"id": user_id})
         db.commit()
         
@@ -138,3 +139,68 @@ async def delete_user(user_id: int, authorization: str = Header(None)):
         )
     finally:
         db.close()
+
+
+@router.post("/face-capture")
+async def capture_face_from_camera(
+    fullName: str = Form(...),
+    authorization: str = Header(None),
+):
+    """Capture a face photo from the server camera and store the face mask in DB.
+
+    This endpoint is meant to be triggered from the live camera view (frontend button).
+    It grabs a single frame, detects the largest face, normalizes it to 200x200 grayscale
+    and saves it into employees.emp_photo via `save_face_to_db`.
+
+    Expects multipart/form-data with:
+    - fullName: str
+    """
+
+    # NOTE: we accept Authorization header for future use, but do not enforce it here,
+    # because the current /admin pages are served without authenticated HTTP requests.
+
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Camera not available")
+
+    try:
+        # Warm up camera a bit
+        frame = None
+        for _ in range(5):
+            ok, frame = cap.read()
+            if ok and frame is not None:
+                break
+
+        if frame is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Failed to read frame from camera",
+            )
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = FACE_CASCADE.detectMultiScale(gray, 1.3, 5, minSize=(100, 100))
+        if len(faces) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No face detected",
+            )
+
+        x, y, w, h = max(faces, key=lambda f: int(f[2]) * int(f[3]))
+        face = gray[y : y + h, x : x + w]
+
+        # Normalize exactly like training expects: equalize + resize
+        face = cv2.equalizeHist(face)
+        face = cv2.resize(face, (200, 200))
+
+        # Persist as the 'mask' used by LBPH training
+        save_face_to_db(fullName, face)
+
+        return {
+            "success": True,
+            "message": f"Face captured for '{fullName}'",
+        }
+    finally:
+        cap.release()
