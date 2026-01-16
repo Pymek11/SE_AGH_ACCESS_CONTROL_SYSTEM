@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (response.ok) {
+                    alert(data.message || 'User added successfully!');
                     const modalElement = document.getElementById('newUserModal');
                     const modal = bootstrap.Modal.getInstance(modalElement);
                     if (modal) {
