@@ -141,6 +141,9 @@ async def face_reset():
 async def read_accessgranted():
     return FileResponse('app/templates/accessgranted.html')
 
+@router.get('/accessdenied')
+async def read_accessdenied():
+    return FileResponse('app/templates/accessdenied.html')
 
 # @router.get("/redirect")
 # async def redirectface():

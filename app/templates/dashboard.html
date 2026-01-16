@@ -85,8 +85,8 @@
                         <div class="d-flex align-items-center">
                             <i class="fas fa-users fa-3x text-primary me-3"></i>
                             <div>
-                                <h6 class="text-uppercase text-muted mb-0">Total Registered Users</h6>
-                                <h2 class="display-5 fw-bold">128</h2>
+                                <h6 class="text-uppercase text-white mb-0">Total Registered Users</h6>
+                                <h2 class="display-5 fw-bold" id="employeeCount">0</h2>
                             </div>
                         </div>
                     </div>
@@ -98,7 +98,7 @@
                         <div class="d-flex align-items-center">
                             <i class="fas fa-check-circle fa-3x status-success me-3"></i>
                             <div>
-                                <h6 class="text-uppercase text-muted mb-0">Successful Access (24h)</h6>
+                                <h6 class="text-uppercase text-white mb-0">Successful Access (24h)</h6>
                                 <h2 class="display-5 fw-bold">874</h2>
                             </div>
                         </div>
@@ -111,7 +111,7 @@
                         <div class="d-flex align-items-center">
                             <i class="fas fa-exclamation-triangle fa-3x status-fail me-3"></i>
                             <div>
-                                <h6 class="text-uppercase text-muted mb-0">Failed Attempts (24h)</h6>
+                                <h6 class="text-uppercase text-white mb-0">Failed Attempts (24h)</h6>
                                 <h2 class="display-5 fw-bold">12</h2>
                             </div>
                         </div>
@@ -133,9 +133,9 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Photo</th>
                             <th>Full Name</th>
-                            <th>Actions</th>
+                            <th></th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,40 +156,17 @@
                                 aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <form id="addUserForm" enctype="multipart/form-data">
+                            <form id="addUserForm">
                                 <div class="mb-3">
                                     <label for="fullName" class="form-label">Full Name</label>
                                     <input type="text" class="form-control bg-secondary text-white border-0"
                                         id="fullName" name="fullName" placeholder="e.g. John Doe" required>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label for="facePhoto" class="form-label">
-                                        <i class="fas fa-user-circle me-1"></i> Face Photo
-                                    </label>
-                                    <input class="form-control bg-secondary text-white border-0" type="file"
-                                        id="facePhoto" name="facePhoto" accept="image/*" required>
-                                    <div class="form-text text-white-50">Upload a clear face photo for facial
-                                        recognition.</div>
-                                </div>
-
-                                <!-- Preview section -->
-                                <div class="row g-2 mb-3">
-                                    <div class="col-12">
-                                        <div id="facePreview" class="border border-secondary rounded p-2 text-center"
-                                            style="min-height: 100px; display: none;">
-                                            <small class="text-white-50 d-block mb-1">Face Preview</small>
-                                            <img id="facePreviewImg" src="" alt="Face Preview"
-                                                style="max-width: 100%; max-height: 150px;">
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="modal-footer border-secondary mt-3 px-0">
                                     <button type="button" class="btn btn-secondary"
                                         data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-primary" id="submitUserBtn">
-                                        <i class="fas fa-save me-1"></i> Save User
+                                 <button type="button" class="btn btn-primary" id="captureUserBtn">
+                                        <i class="fas fa-camera me-1"></i> Capture Face & Add User
                                     </button>
                                 </div>
                             </form>
