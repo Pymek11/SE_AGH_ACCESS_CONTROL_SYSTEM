@@ -68,6 +68,7 @@
       else if (response.status === 403) {
         setStatus('Face not recognized. Access denied.', true);
         window.location.href = 'http://localhost:8000/accessdenied';
+      }
     }
     setInterval(waitForServerAndRedirect, 500);
   </script>
