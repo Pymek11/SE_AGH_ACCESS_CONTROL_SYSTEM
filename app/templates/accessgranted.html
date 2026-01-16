@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Granted</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    
+    </head>
+    <body class="access-granted-page">
+        <div class="access-container">
+            <div class="checkmark"></div>
+            <h1 style="color:black;">Access Granted</h1>
+            <p style="color:black;">You have been granted access successfully.</p>
+            <div class="redirect-info" style="color:black;">Redirecting in <span id="countdown">5</span> seconds...</div>
+        </div>
+
+    <script>
+        let seconds = 5;
+        const countdownElement = document.getElementById('countdown');
+        
+        const interval = setInterval(() => {
+            seconds--;
+            countdownElement.textContent = seconds;
+            
+            if (seconds <= 0) {
+                clearInterval(interval);
+                window.location.href = '/qr'; // Change redirect URL as needed
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
