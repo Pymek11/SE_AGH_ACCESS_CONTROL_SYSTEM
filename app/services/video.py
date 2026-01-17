@@ -6,10 +6,11 @@ import cv2
 import numpy as np
 import time
 from pyzbar.pyzbar import decode
-from sqlalchemy import text
+from sqlalchemy import text, insert
 from app.core.database import SessionLocal
 
 from app.services.facial_recognition import train_lbph_from_db, recognize_and_annotate_frame
+from app.models.qr_image import unauthorized_access
 
 # Global state for video capture
 _cap = None
@@ -20,9 +21,14 @@ _last_face_log_time = 0.0
 _qr_verified = False
 _verified_employee = None
 
+_last_qr_text = None
+
 _face_verified = False
 _face_match_employee = None
 _target_employee = None  
+
+_face_failed_attempts = 0
+_unauthorized_logged = False
 
 def initialize_camera():
     global _cap
@@ -50,12 +56,14 @@ def find_employee_by_qr_data(qr_text: str) -> str:
 
 def process_qr_code(frame):
     global _qr_verified, _verified_employee 
+    global _last_qr_text
     employee_name = None
     
     decoded_objects = decode(frame)
     
     for obj in decoded_objects:
         qr_text = obj.data.decode('utf-8')
+        _last_qr_text = qr_text
         employee_name = find_employee_by_qr_data(qr_text)
 
         if employee_name and employee_name != "Not Found":
@@ -75,6 +83,25 @@ def process_qr_code(frame):
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
     
     return employee_name, frame
+
+
+def _log_unauthorized_access(qr_text: str | None, frame_bgr: np.ndarray) -> None:
+    db = SessionLocal()
+    try:
+        ok, buffer = cv2.imencode('.jpg', frame_bgr)
+        photo_bytes = buffer.tobytes() if ok else None
+        stmt = insert(unauthorized_access).values(
+            qr_text=qr_text,
+            photo=photo_bytes,
+        )
+        db.execute(stmt)
+        db.commit()
+        print(f"🚫 Unauthorized access logged (qr_text={qr_text!r})")
+    except Exception as e:
+        db.rollback()
+        print(f"✗ Failed to log unauthorized access: {e}")
+    finally:
+        db.close()
 
 def generate_frame():
     global _last_detection_time
@@ -136,6 +163,7 @@ def _get_face_model(max_age_s: float = 10.0):
 
 def process_face_recognition(frame):
     global _face_verified, _face_match_employee, _target_employee, _face_model, _face_model_loaded_at, _last_face_log_time
+    global _face_failed_attempts, _unauthorized_logged, _last_qr_text
     
     current_time = time.time()
     
@@ -161,7 +189,7 @@ def process_face_recognition(frame):
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         return frame
     
-    detected_name, confidence, annotated_frame = recognize_and_annotate_frame(
+    detected_name, confidence, annotated_frame, face_count = recognize_and_annotate_frame(
         frame,
         recognizer=recognizer,
         known_names=known_names,
@@ -173,6 +201,8 @@ def process_face_recognition(frame):
         if detected_name == _target_employee:
             _face_verified = True
             _face_match_employee = detected_name
+            _face_failed_attempts = 0
+            _unauthorized_logged = False
             
             cv2.putText(annotated_frame, f"✓ MATCH: {detected_name}", (10, 60),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
@@ -181,6 +211,11 @@ def process_face_recognition(frame):
                 print(f"✅ Face Matched (1:1): {detected_name} == {_target_employee}")
                 _last_face_log_time = current_time
         else:
+            if face_count > 0 and not _unauthorized_logged:
+                _face_failed_attempts += 1
+                if _face_failed_attempts >= 10:
+                    _unauthorized_logged = True
+                    _log_unauthorized_access(_last_qr_text, frame)
             cv2.putText(annotated_frame, f"✗ Wrong person: {detected_name}", (10, 60),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             cv2.putText(annotated_frame, f"Expected: {_target_employee}", (10, 90),
@@ -190,6 +225,11 @@ def process_face_recognition(frame):
                 print(f"⚠️ Face mismatch (1:1): Expected {_target_employee}, got {detected_name}")
                 _last_face_log_time = current_time
     else:
+        if face_count > 0 and not _unauthorized_logged:
+            _face_failed_attempts += 1
+            if _face_failed_attempts >= 10:
+                _unauthorized_logged = True
+                _log_unauthorized_access(_last_qr_text, frame)
         cv2.putText(annotated_frame, f"Waiting for: {_target_employee}", (10, 60),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
     
@@ -242,15 +282,20 @@ def get_face_verification_status():
 def reset_face_verification_status():
     """Resetuje status weryfikacji twarzy"""
     global _face_verified, _face_match_employee, _target_employee
+    global _face_failed_attempts, _unauthorized_logged
     _face_verified = False
     _face_match_employee = None
     _target_employee = None
+    _face_failed_attempts = 0
+    _unauthorized_logged = False
     print("🔄 Face verification status reset")
 
 def set_target_employee(employee_name: str):
     """Ustaw pracownika do weryfikacji twarzy"""
-    global _target_employee
+    global _target_employee, _face_failed_attempts, _unauthorized_logged
     _target_employee = employee_name
+    _face_failed_attempts = 0
+    _unauthorized_logged = False
     print(f"🎯 Target employee set: {employee_name}")
 
 def get_target_employee():

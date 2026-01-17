@@ -212,6 +212,7 @@ def recognize_and_annotate_frame(
 
     gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5, minSize=(100, 100))
+    face_count = int(len(faces))
 
     best_name = "Unknown"
     best_conf = 999.0
@@ -266,7 +267,7 @@ def recognize_and_annotate_frame(
         cv2.putText(frame_bgr, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
         cv2.putText(frame_bgr, decision, (x, y + h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
 
-    return best_name, best_conf, frame_bgr
+    return best_name, best_conf, frame_bgr, face_count
 
 
 def recognize_faces():
@@ -297,7 +298,7 @@ def recognize_faces():
             if not ret:
                 continue
 
-            name, conf, annotated = recognize_and_annotate_frame(
+            name, conf, annotated, _face_count = recognize_and_annotate_frame(
                 frame,
                 recognizer=recognizer,
                 known_names=known_names,
