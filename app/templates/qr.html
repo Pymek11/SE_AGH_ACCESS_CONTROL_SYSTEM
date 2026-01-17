@@ -4,40 +4,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Camera - Access Control</title>
+  <title>QR Scanner - Access Control</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/static/css/styles.css">
-
-  
 </head>
 
-<body class="bg-dark text-white">
-  <div class="container camera-card bg-dark">
+<body class="d-flex flex-column min-vh-100">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">
+        <i class="fas fa-lock me-2"></i> Access Control System
+      </a>
+    </div>
+  </nav>
 
-    <!-- No shadow here -->
-    <div class="card border-0">
-      <div class="card-body bg-dark text-white">
-
+  <div class="container camera-card flex-grow-1 d-flex align-items-center">
+    <div class="card border-0 w-100">
+      <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">Camera View (QR Scanner)</h5>
-          <div class="status text-muted" id="status">Connecting…</div>
+          <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i>QR Code Scanner</h5>
+          <div class="status" id="status">Connecting…</div>
         </div>
 
-        <!-- Shadow only around stream -->
         <div class="video-wrapper">
-          <img id="stream" src="/video_feed" alt="video stream">
+          <img id="stream" src="/video_feed" alt="QR code stream">
           <div class="qr-overlay"></div>
         </div>
 
-        <div class="mt-2 text-muted" style="font-size:0.9rem;">
-          Align QR code within the square
+        <div class="mt-3 text-center text-muted-soft">
+          <small><i class="fas fa-info-circle me-1"></i>Align QR code within the square</small>
         </div>
-
       </div>
     </div>
-
   </div>
+
 
   <script>
     const streamImg = document.getElementById('stream');
@@ -46,7 +48,7 @@
     function setStatus(text, warn = false) {
       statusEl.textContent = text;
       statusEl.classList.toggle('text-danger', warn);
-      statusEl.classList.toggle('text-muted', !warn);
+      statusEl.classList.toggle('text-muted-soft', !warn);
     }
 
     streamImg.addEventListener('load', () => {
@@ -56,6 +58,7 @@
     streamImg.addEventListener('error', () => {
       setStatus('Stream unavailable', true);
     });
+
     async function waitForServerAndRedirect() {
       const response = await fetch('/api/qr-status');
 
