@@ -29,6 +29,7 @@ _target_employee = None
 
 _face_failed_attempts = 0
 _unauthorized_logged = False
+_face_blocked = False
 
 def initialize_camera():
     global _cap
@@ -163,7 +164,7 @@ def _get_face_model(max_age_s: float = 10.0):
 
 def process_face_recognition(frame):
     global _face_verified, _face_match_employee, _target_employee, _face_model, _face_model_loaded_at, _last_face_log_time
-    global _face_failed_attempts, _unauthorized_logged, _last_qr_text
+    global _face_failed_attempts, _unauthorized_logged, _face_blocked, _last_qr_text
     
     current_time = time.time()
     
@@ -188,6 +189,15 @@ def process_face_recognition(frame):
         cv2.putText(frame, "No target employee set", (10, 30),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         return frame
+
+    # If the current QR/target session has been blocked, do not attempt further recognition.
+    if _face_blocked:
+        blocked_frame = frame.copy()
+        cv2.putText(blocked_frame, "ACCESS BLOCKED", (10, 60),
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+        cv2.putText(blocked_frame, "Restart from QR scan", (10, 95),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        return blocked_frame
     
     detected_name, confidence, annotated_frame, face_count = recognize_and_annotate_frame(
         frame,
@@ -203,6 +213,7 @@ def process_face_recognition(frame):
             _face_match_employee = detected_name
             _face_failed_attempts = 0
             _unauthorized_logged = False
+            _face_blocked = False
             
             cv2.putText(annotated_frame, f"✓ MATCH: {detected_name}", (10, 60),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
@@ -215,6 +226,7 @@ def process_face_recognition(frame):
                 _face_failed_attempts += 1
                 if _face_failed_attempts >= 10:
                     _unauthorized_logged = True
+                    _face_blocked = True
                     _log_unauthorized_access(_last_qr_text, frame)
             cv2.putText(annotated_frame, f"✗ Wrong person: {detected_name}", (10, 60),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
@@ -229,6 +241,7 @@ def process_face_recognition(frame):
             _face_failed_attempts += 1
             if _face_failed_attempts >= 10:
                 _unauthorized_logged = True
+                _face_blocked = True
                 _log_unauthorized_access(_last_qr_text, frame)
         cv2.putText(annotated_frame, f"Waiting for: {_target_employee}", (10, 60),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
@@ -272,30 +285,33 @@ def generate_face_frame():
 
 def get_face_verification_status():
     """Zwraca status weryfikacji twarzy"""
-    global _face_verified, _face_match_employee, _target_employee
+    global _face_verified, _face_match_employee, _target_employee, _face_blocked
     return {
         "verified": _face_verified,
         "employee": _face_match_employee,
-        "target": _target_employee
+        "target": _target_employee,
+        "blocked": _face_blocked,
     }
 
 def reset_face_verification_status():
     """Resetuje status weryfikacji twarzy"""
     global _face_verified, _face_match_employee, _target_employee
-    global _face_failed_attempts, _unauthorized_logged
+    global _face_failed_attempts, _unauthorized_logged, _face_blocked
     _face_verified = False
     _face_match_employee = None
     _target_employee = None
     _face_failed_attempts = 0
     _unauthorized_logged = False
+    _face_blocked = False
     print("🔄 Face verification status reset")
 
 def set_target_employee(employee_name: str):
     """Ustaw pracownika do weryfikacji twarzy"""
-    global _target_employee, _face_failed_attempts, _unauthorized_logged
+    global _target_employee, _face_failed_attempts, _unauthorized_logged, _face_blocked
     _target_employee = employee_name
     _face_failed_attempts = 0
     _unauthorized_logged = False
+    _face_blocked = False
     print(f"🎯 Target employee set: {employee_name}")
 
 def get_target_employee():
