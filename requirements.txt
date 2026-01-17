@@ -1,8 +1,8 @@
-# Add runtime dependencies here, e.g.:k
- fastapi
- uvicorn[standard]
- sqlalchemy
- opencv-contrib-python
- face_recognition
- pyzbar
- qrcode[pil]
+# Runtime dependencies
+fastapi
+uvicorn[standard]
+sqlalchemy
+opencv-contrib-python
+face_recognition
+pyzbar
+qrcode[pil]
