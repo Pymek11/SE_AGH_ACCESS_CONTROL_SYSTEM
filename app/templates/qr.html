@@ -60,14 +60,26 @@
     });
 
     async function waitForServerAndRedirect() {
+      try {
       const response = await fetch('/api/qr-status');
+      const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.verified) {
         setStatus('QR code recognized');
-        window.location.href = 'http://localhost:8000/facerec';
+        setTimeout (() => {
+        window.location.href = '/facerec';
+      }, 500);
+    } else {
+      setTimeout(waitForServerAndRedirect, 500);
+    }
+  } catch (error) {
+        setTimeout(waitForServerAndRedirect, 2000);
       }
     }
-    setInterval(waitForServerAndRedirect, 500);
+    window.onload = () => {
+            fetch('/api/qr-reset', {method: 'POST'});
+            waitForServerAndRedirect();
+    };
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
