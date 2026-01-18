@@ -1,147 +1,171 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOMContentLoaded fired');
+    console.log('✅ Main.js loaded');
     
-    // Load users on page load
+    // Załaduj listę użytkowników na starcie
     loadUsers();
     
-    // Handle capture button click
-    document.addEventListener('click', async function(e) {
-        if (e.target && e.target.id === 'captureUserBtn') {
-            console.log('✅ Capture button clicked');
+    // --- OBSŁUGA PRZEŁĄCZNIKA (PLIK / KAMERA) ---
+    const radioFile = document.getElementById('methodFile');
+    const radioCamera = document.getElementById('methodCamera');
+    const sectionFile = document.getElementById('sectionFile');
+    const sectionCamera = document.getElementById('sectionCamera');
+
+    function toggleMethod() {
+        if (radioFile.checked) {
+            sectionFile.classList.remove('d-none');
+            sectionCamera.classList.add('d-none');
+        } else {
+            sectionFile.classList.add('d-none');
+            sectionCamera.classList.remove('d-none');
+        }
+    }
+
+    if(radioFile && radioCamera) {
+        radioFile.addEventListener('change', toggleMethod);
+        radioCamera.addEventListener('change', toggleMethod);
+    }
+
+    // --- OBSŁUGA PRZYCISKU SAVE ---
+    const saveBtn = document.getElementById('saveUserBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             
-            const fullName = document.getElementById('fullName').value.trim();
+            // 1. Walidacja Imienia
+            const fullNameInput = document.getElementById('fullName');
+            const fullName = fullNameInput.value.trim();
+            
             if (!fullName) {
                 alert('Please enter a full name');
+                fullNameInput.focus();
                 return;
             }
-            
-            const btn = e.target;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Capturing...';
-            
+
+            // 2. Blokada przycisku
+            const originalBtnText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Processing...';
+
             try {
                 const formData = new FormData();
                 formData.append('fullName', fullName);
+
+                let url = '';
                 
-                const response = await fetch('/admin/face-capture', {
+                // 3. Sprawdzenie wybranej metody
+                if (radioFile.checked) {
+                    // --- METODA: PLIK ---
+                    const fileInput = document.getElementById('facePhoto');
+                    if (fileInput.files.length === 0) {
+                        throw new Error("Please select a photo file.");
+                    }
+                    formData.append('facePhoto', fileInput.files[0]);
+                    url = '/admin/users'; // Endpoint do uploadu
+                } else {
+                    // --- METODA: KAMERA ---
+                    // Tutaj nie wysyłamy pliku, backend sam weźmie klatkę z kamery
+                    url = '/admin/face-capture'; // Endpoint do capture
+                }
+
+                // 4. Wysłanie żądania
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Basic ' + sessionStorage.getItem('adminAuth')
+                        // Basic Auth pobieramy z sesji (zakładając, że logowanie go tam zapisało)
+                        // Jeśli nie masz logowania, usuń headers 'Authorization'
+                        'Authorization': 'Basic ' + (sessionStorage.getItem('adminAuth') || btoa('admin:admin1'))
                     },
-                    body: formData
+                    body: formData 
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
-                    alert(data.message || 'User added successfully!');
-                    const modalElement = document.getElementById('newUserModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
-                    document.getElementById('addUserForm').reset();
+                    alert('✅ Success: ' + (data.message || 'User added!'));
                     
-                    // Reload users table
+                    // Zamknij modal
+                    const modalEl = document.getElementById('newUserModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    
+                    // Reset formularza
+                    document.getElementById('addUserForm').reset();
+                    // Przywrócenie domyślnego widoku (plik)
+                    radioFile.checked = true;
+                    toggleMethod();
+                    
+                    // Odśwież tabelę
                     loadUsers();
                 } else {
-                    alert('Error: ' + (data.detail || 'Failed to capture face'));
+                    throw new Error(data.detail || 'Unknown server error');
                 }
+
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error capturing face: ' + error.message);
+                alert('❌ Error: ' + error.message);
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-camera me-1"></i> Capture Face & Add User';
+                // Przywrócenie przycisku
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalBtnText;
             }
-        }
-    });
+        });
+    }
 });
 
-// Load users from backend
 async function loadUsers() {
     try {
         const response = await fetch('/admin/users', {
             headers: {
-                'Authorization': 'Basic ' + sessionStorage.getItem('adminAuth')
+                'Authorization': 'Basic ' + (sessionStorage.getItem('adminAuth') || btoa('admin:admin1'))
             }
         });
-        
         const data = await response.json();
         
         if (response.ok && data.users) {
             const tbody = document.querySelector('table tbody');
+            const countEl = document.getElementById('employeeCount');
             
-            if (!tbody) {
-                console.error('Table tbody not found');
-                return;
-            }
-            
+            if (countEl) countEl.textContent = data.users.length;
+
             if (data.users.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No users found</td></tr>';
                 return;
             }
-            
-            // ✅ Użyj ikony zamiast obrazka
-            tbody.innerHTML = data.users.map((user) => `
+
+            tbody.innerHTML = data.users.map(user => `
                 <tr>
                     <td>${user.id}</td>
                     <td>${user.name}</td>
-                    <td></td>
+                    <td><i class="fas fa-check-circle text-success"></i> Active</td>
                     <td class="text-end">
-                        <div class="d-flex justify-content-end">
-                            <button class="btn btn-sm btn-warning me-2" onclick="editUser(${user.id})">
-                                <i class="fas fa-edit me-1"></i> Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.name}')">
-                                <i class="fas fa-trash-alt me-1"></i> Delete
-                            </button>
-                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id}, '${user.name}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </td>
                 </tr>
             `).join('');
-
-            // Update employee count
-            const countElement = document.getElementById('employeeCount');
-            if (countElement) {
-                countElement.textContent = data.users.length;
-            }
         }
     } catch (error) {
-        console.error('Error loading users:', error);
+        console.error('Load users error:', error);
     }
 }
 
-// Delete user
-async function deleteUser(userId, userName) {
-    if (!confirm(`Are you sure you want to delete ${userName}?`)) {
-        return;
-    }
+async function deleteUser(id, name) {
+    if(!confirm(`Delete user ${name}?`)) return;
     
     try {
-        const response = await fetch(`/admin/users/${userId}`, {
+        const response = await fetch(`/admin/users/${id}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': 'Basic ' + sessionStorage.getItem('adminAuth')
+                'Authorization': 'Basic ' + (sessionStorage.getItem('adminAuth') || btoa('admin:admin1'))
             }
         });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert(data.message || 'User deleted successfully');
+        if(response.ok) {
             loadUsers();
         } else {
-            alert('Error: ' + (data.detail || 'Failed to delete user'));
+            alert("Failed to delete");
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error deleting user: ' + error.message);
+    } catch(e) {
+        console.error(e);
     }
-}
-
-// Edit user (placeholder)
-function editUser(userId) {
-    alert('Edit functionality coming soon for user ID: ' + userId);
 }

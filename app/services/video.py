@@ -57,7 +57,7 @@ class VideoCamera:
             return
 
         self.last_open_attempt_time = time.time()
-        backend = cv2.CAP_V4L2 if platform.system() == 'Linux' else cv2.CAP_ANY
+        backend =  cv2.CAP_ANY
         
         # Próbujemy tylko /dev/video0 dla uproszczenia (lub pętlą jeśli wolisz)
         for index in range(2): 
@@ -244,7 +244,7 @@ class VideoCamera:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                 cv2.putText(annotated_frame, f"Expected: {self.target_employee}", (10, 90),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
-                if self.face_failed_attempts >= 10:
+                if self.face_failed_attempts >= 20:
                     self.face_blocked = True
                     self.state = CameraState.ACCESS_DENIED
                     self.state_start_time = current_time
