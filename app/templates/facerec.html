@@ -98,9 +98,6 @@
         }
 
         window.onload = () => {
-            // Resetujemy stan twarzy przy wejściu na stronę
-            fetch('/api/face-reset', {method: 'POST'});
-            // Uruchamiamy pętlę sprawdzania
             waitForServerAndRedirect();
         };
   </script>

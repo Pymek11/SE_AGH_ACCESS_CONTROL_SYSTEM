@@ -25,12 +25,8 @@ async def read_qr():
 
 @router.get('/facerec')
 async def read_facerec():
-    return FileResponse('app/templates/facerec.html')
-
-@router.get('/facerec')
-async def read_facerec():
     if not camera_instance or not camera_instance.target_employee:
-        print("⚠️ No target employee set, redirecting to QR")
+        print("⚠️ Brak target_employee, przekierowanie do QR")
         return RedirectResponse(url='/qr')
     
     print(f"✅ Face recognition page for: {camera_instance.target_employee}")

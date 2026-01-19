@@ -29,6 +29,7 @@ from app.core.database import SessionLocal
 
 CASCADE_PATH = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 FACE_CASCADE = cv2.CascadeClassifier(CASCADE_PATH)
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 
 
 def _lbph_available() -> bool:
@@ -49,7 +50,8 @@ def crop_and_normalize(image: np.ndarray) -> np.ndarray:
         gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
         gray_img = image
-
+    gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
+   
     # Wykrywanie twarzy
     faces = FACE_CASCADE.detectMultiScale(gray_img, 1.1, 5, minSize=(60, 60))
     
@@ -63,7 +65,7 @@ def crop_and_normalize(image: np.ndarray) -> np.ndarray:
         raise ValueError("Nie wykryto twarzy na zdjęciu")
 
     # Normalizacja (wyrównanie histogramu i rozmiaru)
-    face = cv2.equalizeHist(face)
+    face = clahe.apply(face)
     face = cv2.resize(face, (200, 200))
     return face
 
@@ -190,10 +192,12 @@ def enroll_face(name: str):
         cap.release()
         cv2.destroyAllWindows()
 
-def recognize_and_annotate_frame(frame_bgr, recognizer, known_names, threshold=80.0, now=None):
+def recognize_and_annotate_frame(frame_bgr, recognizer, known_names, threshold=90.0, now=None):
     if now is None: now = time.time()
     
     gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+
     faces = FACE_CASCADE.detectMultiScale(gray, 1.3, 5, minSize=(100, 100))
     
     # Liczba wykrytych twarzy (używane w video.py do logowania prób)
@@ -210,7 +214,7 @@ def recognize_and_annotate_frame(frame_bgr, recognizer, known_names, threshold=8
             # 2. Przetwarzamy do formatu LBPH
             # Zamiast crop_and_normalize (który szuka twarzy w twarzy i powodował błąd),
             # robimy manualną normalizację, bo JUŻ mamy twarz (x,y,w,h)
-            face_img = cv2.equalizeHist(face_roi)
+            face_img = clahe.apply(face_roi)
             face_img = cv2.resize(face_img, (200, 200))
 
             # 3. Predykcja
