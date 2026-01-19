@@ -28,7 +28,7 @@
         </div>
 
         <div class="video-wrapper">
-          <img id="stream" src="/face_feed" alt="Face recognition stream">
+          <img id="stream" src="/video_feed" alt="Face recognition stream">
           <div class="face-overlay">
             <div class="eye-line"></div>
           </div>
@@ -58,19 +58,48 @@
     streamImg.addEventListener('error', () => {
       setStatus('Stream unavailable', true);
     });
-    async function waitForServerAndRedirect() {
-      const response = await fetch('/api/face-status');
 
-      if (response.ok) {
-        setStatus('Face recognized! Access granted.');
-        window.location.href = 'http://localhost:8000/accessgranted';
-      }
-      else if (response.status === 403) {
-        setStatus('Face not recognized. Access denied.', true);
-        window.location.href = 'http://localhost:8000/accessdenied';
-      }
-    }
-    setInterval(waitForServerAndRedirect, 500);
+
+
+    async function waitForServerAndRedirect() {
+          try {
+            const response = await fetch('/api/face-status');
+            
+            // 1. Obsługa BLOKADY (Status 403 z backendu)
+            if (response.status === 403) {
+                setStatus('Access Blocked!', true);
+                setTimeout(() => {
+                    window.location.href = '/accessdenied';
+                }, 1000);
+                return; // Kończymy pętlę, nie wywołujemy setTimeout ponownie
+            }
+
+            const data = await response.json();
+
+            // 2. Obsługa SUKCESU
+            if (response.ok && data.verified) {
+              setStatus('Face recognized');
+              setTimeout(() => {
+                window.location.href = '/accessgranted';
+              }, 500);
+              return; // Kończymy pętlę
+            } 
+            
+            // 3. W TRAKCIE (verified: false) - Pytamy dalej
+            else {
+              setTimeout(waitForServerAndRedirect, 500);
+            }
+
+          } catch (error) {
+            console.error("Błąd API:", error);
+            // Błąd sieci - próbujemy rzadziej
+            setTimeout(waitForServerAndRedirect, 2000);
+          }
+        }
+
+        window.onload = () => {
+            waitForServerAndRedirect();
+        };
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

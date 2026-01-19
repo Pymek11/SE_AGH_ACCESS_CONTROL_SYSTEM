@@ -139,21 +139,15 @@
                         </tr>
                     </thead>
                     <tbody>
-
-
-
-
             </div>
-            <div class="modal fade" id="newUserModal" tabindex="-1" aria-labelledby="newUserModalLabel"
-                aria-hidden="true">
+            <div class="modal fade" id="newUserModal" tabindex="-1" aria-labelledby="newUserModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content bg-dark text-white">
+                    <div class="modal-content bg-dark text-white border-secondary">
                         <div class="modal-header border-secondary">
                             <h5 class="modal-title" id="newUserModalLabel">
                                 <i class="fas fa-user-plus me-2"></i> Add New User
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <form id="addUserForm">
@@ -162,11 +156,38 @@
                                     <input type="text" class="form-control bg-secondary text-white border-0"
                                         id="fullName" name="fullName" placeholder="e.g. John Doe" required>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Photo Source</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="entryMethod" id="methodFile" value="file" checked>
+                                        <label class="btn btn-outline-primary" for="methodFile"><i class="fas fa-upload me-1"></i> Upload File</label>
+
+                                        <input type="radio" class="btn-check" name="entryMethod" id="methodCamera" value="camera">
+                                        <label class="btn btn-outline-primary" for="methodCamera"><i class="fas fa-camera me-1"></i> Use Camera</label>
+                                    </div>
+                                </div>
+
+                                <div id="sectionFile" class="mb-3">
+                                    <label for="facePhoto" class="form-label">Upload Photo</label>
+                                    <input class="form-control bg-secondary text-white border-0" type="file" id="facePhoto" accept="image/*">
+                                    <div class="form-text text-muted">Supported formats: JPG, PNG. Face should be clearly visible.</div>
+                                </div>
+
+                                <div id="sectionCamera" class="mb-3 d-none text-center">
+                                    <label class="form-label">Live Preview</label>
+                                    <div class="border border-secondary rounded overflow-hidden mb-2" style="height: 240px;">
+                                        <!-- Podgląd na żywo w modalu! -->
+                                        <img src="/video_feed" class="w-100 h-100 object-fit-cover" alt="Camera Preview">
+                                    </div>
+                                    <small class="text-info"><i class="fas fa-info-circle"></i> Look directly at the camera.</small>
+                                </div>
+
                                 <div class="modal-footer border-secondary mt-3 px-0">
-                                    <button type="button" class="btn btn-secondary"
-                                        data-bs-dismiss="modal">Cancel</button>
-                                 <button type="button" class="btn btn-primary" id="captureUserBtn">
-                                        <i class="fas fa-camera me-1"></i> Capture Face & Add User
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <!-- Ten przycisk obsłuży obie akcje -->
+                                    <button type="button" class="btn btn-success" id="saveUserBtn">
+                                        <i class="fas fa-save me-1"></i> Save User
                                     </button>
                                 </div>
                             </form>
