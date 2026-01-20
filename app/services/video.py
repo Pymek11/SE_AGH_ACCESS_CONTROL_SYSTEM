@@ -65,13 +65,13 @@ class VideoCamera:
             if cap.isOpened():
                 ret, frame = cap.read()
                 if ret and frame is not None and frame.size > 0:
-                    print(f"✅ Kamera otwarta (index={index})")
+                    print(f"Kamera otwarta (index={index})")
                     self.video = cap
                     return
                 else:
                     cap.release()
         
-        print("❌ Nie udało się otworzyć kamery (Auto-Retry)")
+        print("Nie udało się otworzyć kamery (Auto-Retry)")
 
     def __del__(self):
             if self.video.isOpened():
@@ -82,13 +82,13 @@ class VideoCamera:
             self._reset_session_state()
             self.state = CameraState.IDLE
             self.state_start_time = time.time()
-            print("🛑 Camera reset to IDLE state")
+            print("Camera reset to IDLE state")
     def start_qr_scanning(self):
         with self.lock:
             self._reset_session_state()
             self.state = CameraState.QR_SCANNING
             self.state_start_time = time.time()
-            print("🚀 Started QR scanning mode")
+            print("Started QR scanning mode")
         
     def set_target_employee(self, employee_name: str):
         with self.lock:
@@ -96,7 +96,7 @@ class VideoCamera:
             self.state = CameraState.FACE_VERIFICATION
             self.face_failed_attempts = 0
             self.state_start_time = time.time()
-            print(f"🎯 Target employee set to: {employee_name}, switched to FACE_VERIFICATION mode")
+            print(f"Target employee set to: {employee_name}, switched to FACE_VERIFICATION mode")
 
     def _reset_session_state(self):
         """Czyści zmienne sesyjne (prywatna metoda)."""
@@ -292,10 +292,10 @@ def _log_unauthorized_access(qr_text: str | None, frame_bgr: np.ndarray) -> None
         )
         db.execute(stmt)
         db.commit()
-        print(f"🚫 Unauthorized access logged (qr_text={qr_text!r})")
+        print(f"Unauthorized access logged (qr_text={qr_text!r})")
     except Exception as e:
         db.rollback()
-        print(f"✗ Failed to log unauthorized access: {e}")
+        print(f"Failed to log unauthorized access: {e}")
     finally:
         db.close()
 
