@@ -4,10 +4,13 @@ This repository contains a minimal Local Web Application for a QR and Biometrics
 
 Run instructions (Windows):
 
-1. Create and activate a Python 3.10+ virtual environment:
+1. Create and activate a virtual environment.
+
+	Recommended on Windows: Python 3.13 (or 3.12). Python 3.14 can pull an
+	experimental NumPy build (MinGW) that prints warnings and may be unstable.
 
 ```cmd
-python -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\activate
 ```
 

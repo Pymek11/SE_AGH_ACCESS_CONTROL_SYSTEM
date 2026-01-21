@@ -61,11 +61,7 @@ def generate_and_store_qr_codes(
 
 if __name__ == '__main__':
     employee_list = [
-        "John Doe",
-        "Jane Smith",
-        "Bob Johnson",
-        "Alice Brown",
-        "Charlie Wilson"
+        "Szymon Manijak2",
     ]
     
     generate_and_store_qr_codes(

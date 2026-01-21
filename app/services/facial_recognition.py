@@ -44,60 +44,61 @@ def _create_lbph_recognizer():
     return cv2.face.LBPHFaceRecognizer_create()
 
 
-def _crop_and_normalize(gray_img: np.ndarray) -> np.ndarray:
+def crop_and_normalize(image: np.ndarray) -> np.ndarray:
+    if len(image.shape) == 3:
+        gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray_img = image
+   
+    # Wykrywanie twarzy
     faces = FACE_CASCADE.detectMultiScale(gray_img, 1.1, 5, minSize=(60, 60))
+    
     if len(faces) > 0:
+        # Wybierz największą twarz (najbliższą kamery)
         x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
         face = gray_img[y : y + h, x : x + w]
     else:
-        h, w = gray_img.shape
-        m = min(h, w)
-        y0 = (h - m) // 2
-        x0 = (w - m) // 2
-        face = gray_img[y0 : y0 + m, x0 : x0 + m]
+        # Fallback: jeśli nie wykryto twarzy, spróbuj wyciąć środek (dla debugowania)
+        # W produkcji lepiej rzucić błąd
+        raise ValueError("Nie wykryto twarzy na zdjęciu")
 
-    face = cv2.equalizeHist(face)
+    # Normalizacja (wyrównanie histogramu i rozmiaru)
     face = cv2.resize(face, (200, 200))
     return face
 
 
-def load_faces_from_db():
-    """Load all face photos and names from database.
 
-    Returns: (faces, names)
-    - faces: list[np.ndarray] (200x200 grayscale)
-    - names: list[str]
-    """
+def load_faces_from_db():
     db = SessionLocal()
     faces: list[np.ndarray] = []
     names: list[str] = []
-
     try:
-        result = db.execute(
-            text("SELECT emp_name, emp_photo FROM employees WHERE emp_photo IS NOT NULL")
-        )
-
+        # Pobieramy tylko te wiersze, które mają zdjęcie
+        result = db.execute(text("SELECT emp_name, emp_photo FROM employees WHERE emp_photo IS NOT NULL"))
         for emp_name, emp_photo in result:
-            if not emp_photo:
-                continue
+            if not emp_photo: continue
+            
+            # Dekodowanie BLOBa do obrazu
             img_array = np.frombuffer(emp_photo, dtype=np.uint8)
             img = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
-            if img is None:
-                continue
-            face = _crop_and_normalize(img)
-            faces.append(face)
-            names.append(emp_name or "Unknown")
-
+            
+            if img is None: continue
+            
+            # Tutaj zakładamy, że w bazie są już "gotowe maski", 
+            # ale dla pewności możemy przepuścić przez normalizację
+            try:
+                # Jeśli zdjęcie w bazie jest już 200x200, resize nic nie zepsuje
+                face = cv2.resize(img, (200, 200)) 
+                faces.append(face)
+                names.append(emp_name or "Unknown")
+            except Exception:
+                pass
         return faces, names
     finally:
         db.close()
 
 
 def train_lbph_from_db():
-    """Train an LBPH recognizer from employee photos stored in the DB.
-
-    Returns: (recognizer, known_names)
-    """
     known_faces, known_names = load_faces_from_db()
     if len(known_faces) == 0:
         raise RuntimeError("No faces in database. Add users with emp_photo first.")
@@ -177,7 +178,7 @@ def enroll_face(name: str):
                 if len(faces) > 0:
                     x, y, w, h = faces[0]
                     face_img = gray[y : y + h, x : x + w]
-                    face_img = _crop_and_normalize(face_img)
+                    face_img = crop_and_normalize(face_img)
                     save_face_to_db(name, face_img)
                     break
                 print("No face detected. Try again.")
@@ -188,85 +189,50 @@ def enroll_face(name: str):
         cap.release()
         cv2.destroyAllWindows()
 
-
-def recognize_and_annotate_frame(
-    frame_bgr: np.ndarray,
-    *,
-    recognizer,
-    known_names: list[str],
-    threshold: float = 80.0,
-    face_cascade=FACE_CASCADE,
-    last_state=("Unknown", 999.0, 0.0),
-    now: float | None = None,
-):
-    """Recognize faces on a single BGR frame and draw labels.
-
-    Returns: (best_name, best_confidence, annotated_frame)
-    - best_name: recognized employee name or "Unknown"
-    - best_confidence: LBPH distance (lower is better)
-    """
-    if now is None:
-        now = time.time()
-
-    last_name, last_conf, last_seen = last_state
-
+def recognize_and_annotate_frame(frame_bgr, recognizer, known_names, threshold=90.0, now=None):
+    if now is None: now = time.time()
+    
     gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5, minSize=(100, 100))
 
+    faces = FACE_CASCADE.detectMultiScale(gray, 1.3, 5, minSize=(100, 100))
+    
+    # Liczba wykrytych twarzy (używane w video.py do logowania prób)
+    face_count = len(faces)
+    
     best_name = "Unknown"
     best_conf = 999.0
 
     for (x, y, w, h) in faces:
-        face_img = gray[y : y + h, x : x + w]
-        face_img = _crop_and_normalize(face_img)
+        try:
+            # 1. Wycinamy twarz z klatki
+            face_roi = gray[y:y+h, x:x+w]
+            
+            # 2. Przetwarzamy do formatu LBPH
+            # Zamiast crop_and_normalize (który szuka twarzy w twarzy i powodował błąd),
+            # robimy manualną normalizację, bo JUŻ mamy twarz (x,y,w,h)
+            face_img = cv2.resize(face_roi, (200, 200))
 
-        label, confidence = recognizer.predict(face_img)
-        confidence = float(confidence)
+            # 3. Predykcja
+            label, confidence = recognizer.predict(face_img)
+            
+            if confidence < best_conf:
+                best_conf = confidence
+                if 0 <= label < len(known_names):
+                    best_name = known_names[label]
 
-        if confidence < best_conf:
-            best_conf = confidence
-            if 0 <= int(label) < len(known_names):
-                best_name = known_names[int(label)]
-            else:
-                best_name = "Unknown"
+            # Rysowanie
+            color = (0, 255, 0) if confidence < threshold else (0, 0, 255)
+            text_name = best_name if confidence < threshold else "Unknown"
+            text = f"{text_name} ({confidence:.1f})"
+            cv2.rectangle(frame_bgr, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame_bgr, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+            
+        except Exception as e:
+            print(f"Błąd przetwarzania twarzy: {e}")
+            continue
+    final_name = best_name if best_conf < threshold else "Unknown"
 
-        # LBPH returns a distance (lower is better). Convert to a simple 0-100% score
-        # relative to the recognition threshold so the UI isn't stuck at 0%.
-        if threshold <= 0:
-            conf_pct = 0.0
-        else:
-            conf_pct = max(0.0, min(100.0, (threshold - confidence) / threshold * 100.0))
-
-        if confidence <= threshold:
-            last_name = best_name
-            last_conf = confidence
-            last_seen = now
-
-        if confidence <= threshold:
-            name = last_name
-            color = (0, 255, 0)
-            text = f"{name} ({conf_pct:.0f}%) d={confidence:.1f}"
-            decision = "IN DATABASE"
-        elif last_name != "Unknown" and (now - last_seen) < 2.0:
-            name = last_name
-            color = (0, 200, 0)
-            if threshold <= 0:
-                last_pct = 0.0
-            else:
-                last_pct = max(0.0, min(100.0, (threshold - last_conf) / threshold * 100.0))
-            text = f"{name} ({last_pct:.0f}%) d={last_conf:.1f}"
-            decision = "IN DATABASE"
-        else:
-            name = "Unknown"
-            color = (0, 0, 255)
-            text = f"Unknown ({conf_pct:.0f}%) d={confidence:.1f}"
-            decision = "NOT IN DATABASE"
-
-        cv2.rectangle(frame_bgr, (x, y), (x + w, y + h), color, 2)
-        cv2.putText(frame_bgr, text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-        cv2.putText(frame_bgr, decision, (x, y + h + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
-
-    return best_name, best_conf, frame_bgr
+    return final_name, best_conf, frame_bgr, face_count
 
 
 def recognize_faces():
@@ -297,7 +263,7 @@ def recognize_faces():
             if not ret:
                 continue
 
-            name, conf, annotated = recognize_and_annotate_frame(
+            name, conf, annotated, _face_count = recognize_and_annotate_frame(
                 frame,
                 recognizer=recognizer,
                 known_names=known_names,
