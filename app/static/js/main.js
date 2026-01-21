@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Załaduj listę użytkowników na starcie
     loadUsers();
     
+    // Załaduj listę nieudanych prób na starcie
+    loadAttempts();
+    
     // --- OBSŁUGA PRZEŁĄCZNIKA (PLIK / KAMERA) ---
     const radioFile = document.getElementById('methodFile');
     const radioCamera = document.getElementById('methodCamera');
@@ -147,6 +150,52 @@ async function loadUsers() {
         }
     } catch (error) {
         console.error('Load users error:', error);
+    }
+}
+
+async function loadAttempts() {
+    try {
+        const response = await fetch('/admin/api/failed-attempts', {
+            headers: {
+                'Authorization': 'Basic ' + (sessionStorage.getItem('adminAuth') || btoa('admin:admin1'))
+            }
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.failed_attempts) {
+            const tbody = document.querySelector('#attemptsTable tbody');
+            const countEl = document.getElementById('attemptCount');
+            const cardCountEl = document.getElementById('failedAttemptsCount');
+            
+            // Filter attempts from last 24 hours
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            
+            const last24hAttempts = data.failed_attempts.filter(attempt => {
+                const attemptTime = new Date(attempt.created_at);
+                return attemptTime >= oneDayAgo;
+            });
+            
+            // Update both counters
+            if (countEl) countEl.textContent = last24hAttempts.length;
+            if (cardCountEl) cardCountEl.textContent = last24hAttempts.length;
+
+            if (last24hAttempts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No failed attempts in the last 24 hours</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = last24hAttempts.map(attempt => `
+                <tr>
+                    <td>${attempt.id}</td>
+                    <td>${new Date(attempt.created_at).toLocaleString()}</td>
+                    <td>${attempt.qr_text || 'Unknown'}</td>
+                    <td><img src="data:image/jpeg;base64,${attempt.photo}" alt="Photo" style="max-width: 50px; max-height: 50px;"></td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Load attempts error:', error);
     }
 }
 
