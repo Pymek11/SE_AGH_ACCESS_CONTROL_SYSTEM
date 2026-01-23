@@ -200,3 +200,6 @@ async def get_failed_attempts(authorization: str = Header(None)):
         return {"failed_attempts": attempts}
     finally:
         db.close()
+@router.get('/api/access-denials')
+async def get_access_denials(authorization: str = Header(None)):
+    return FileResponse('app/templates/denials.html')
