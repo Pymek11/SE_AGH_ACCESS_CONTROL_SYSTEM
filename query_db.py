@@ -48,6 +48,27 @@ def main():
                 for r in rows:
                     print(r)
 
+        # Show authorized access logs (if table exists)
+        if any(t[0] == "good_entries" for t in tables):
+            count = conn.execute(text("SELECT COUNT(*) FROM good_entries;")).scalar_one()
+            print(f"\ngood_entries rows: {count}\n")
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT id, emp_id, emp_name, created_at
+                    FROM good_entries
+                    ORDER BY id DESC
+                    LIMIT 10;
+                    """
+                )
+            ).fetchall()
+            if rows:
+                print("Latest good_entries rows:")
+                for r in rows:
+                    print(r)
+            else:
+                print("(no good_entries rows yet)")
+
 
 if __name__ == '__main__':
     main()

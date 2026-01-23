@@ -8,7 +8,7 @@ from pyzbar.pyzbar import decode
 from sqlalchemy import text, insert
 from app.core.database import SessionLocal
 from app.services.facial_recognition import train_lbph_from_db, recognize_and_annotate_frame
-from app.models.qr_image import unauthorized_access
+from app.models.qr_image import unauthorized_access, good_entries
 
 class CameraState(Enum):
     IDLE = "IDLE"
@@ -236,6 +236,8 @@ class VideoCamera:
                 self.state = CameraState.ACCESS_GRANTED
                 self.state_start_time = current_time
                 self.face_verified = True
+                self.verified_employee = detected_name
+                _log_good_entry(employee_name=detected_name)
                 cv2.putText(annotated_frame, f"✓ MATCH: {detected_name}", (10, 60),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
             elif detected_name != "Unknown" or (face_count > 0 and detected_name == "Unknown"):
@@ -296,6 +298,27 @@ def _log_unauthorized_access(qr_text: str | None, frame_bgr: np.ndarray) -> None
     except Exception as e:
         db.rollback()
         print(f"Failed to log unauthorized access: {e}")
+    finally:
+        db.close()
+
+
+def _log_good_entry(employee_name: str) -> None:
+    db = SessionLocal()
+    try:
+        emp_id = db.execute(
+            text("SELECT emp_id FROM employees WHERE emp_name = :name ORDER BY emp_id DESC LIMIT 1"),
+            {"name": employee_name},
+        ).scalar()
+        stmt = insert(good_entries).values(
+            emp_id=emp_id,
+            emp_name=employee_name,
+        )
+        db.execute(stmt)
+        db.commit()
+        print(f"Good entry logged (employee={employee_name!r})")
+    except Exception as e:
+        db.rollback()
+        print(f"Failed to log good entry: {e}")
     finally:
         db.close()
 
