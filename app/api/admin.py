@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Header, File, UploadFile, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import insert, text  # ✅ Jeden import, usuń duplikat
 import cv2
 import numpy as np
@@ -180,5 +180,23 @@ async def capture_face_from_camera(
         db.rollback()
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+@router.get('/api/failed-attempts')
+async def get_failed_attempts(authorization: str = Header(None)):
+    verify_admin_header(authorization)
+    db = SessionLocal()
+    try:
+        result = db.execute(text("SELECT * FROM unauthorized_access")).fetchall()
+        attempts = [
+            {
+                "id": row[0],
+                "qr_text": row[1],
+                "photo": base64.b64encode(row[2]).decode() if row[2] else None,
+                "created_at": row[3]
+            } for row in result
+        ]
+        return {"failed_attempts": attempts}
     finally:
         db.close()
