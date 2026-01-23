@@ -331,6 +331,8 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
 
         # For each target identity (QR), try every camera face.
         # Access should only be granted when camera face == target employee.
+        total_checks = 0
+        deny_checks = 0
         with patch.object(facial_recognition, "FACE_CASCADE", stub_cascade):
             for target_index, target_name in enumerate(known_names):
                 qr_text = build_qr_payload(target_name)
@@ -362,6 +364,10 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
                     granted = detected_name == target_name
                     should_grant = camera_index == target_index
 
+                    total_checks += 1
+                    if not granted:
+                        deny_checks += 1
+
                     verdict = "GRANT" if granted else "DENY"
                     print(
                         f"[break-in] camera_face={camera_name!r} compared_to_qr_user={target_name!r} "
@@ -378,6 +384,9 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
                             granted,
                             f"Expected DENY for target={target_name!r} with camera={camera_name!r} (detected={detected_name!r}, conf={conf})",
                         )
+
+        deny_pct = (deny_checks / total_checks * 100.0) if total_checks else 0.0
+        print(f"[break-in summary] DENY rate: {deny_pct:.2f}% ({deny_checks}/{total_checks})")
 
     def test_break_in_attempt_against_access_control_db_employees(self):
         """Integration-style check against the real ./access_control.db.
@@ -424,6 +433,8 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
         stub_cascade = StubCascade(np.array([[50, 60, 200, 200]]))
 
         # Target identity = each employee (represents 'using that person's QR code').
+        total_checks = 0
+        deny_checks = 0
         with patch.object(facial_recognition, "FACE_CASCADE", stub_cascade):
             for target_index, target_name in enumerate(known_names):
                 print(f"[prod-db break-in] QR target employee: {target_name!r} (emp_id={known_ids[target_index]})")
@@ -442,6 +453,10 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
                     granted = detected_name == target_name
                     should_grant = camera_index == target_index
 
+                    total_checks += 1
+                    if not granted:
+                        deny_checks += 1
+
                     verdict = "GRANT" if granted else "DENY"
                     print(
                         f"[prod-db break-in] camera_face={camera_name!r} compared_to_qr_user={target_name!r} "
@@ -458,6 +473,9 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
                             granted,
                             f"Expected DENY for target={target_name!r} with camera={camera_name!r} (detected={detected_name!r}, conf={conf})",
                         )
+
+        deny_pct = (deny_checks / total_checks * 100.0) if total_checks else 0.0
+        print(f"[prod-db break-in summary] DENY rate: {deny_pct:.2f}% ({deny_checks}/{total_checks})")
 
     def test_fixture_faces_against_each_real_employee_in_access_control_db(self):
         """Try each fixture face against every real employee in access_control.db.
@@ -510,6 +528,8 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
         # Very strict threshold: only near-identical images count as a match.
         strict_threshold = 1e-6
 
+        total_checks = 0
+        deny_checks = 0
         with patch.object(facial_recognition, "FACE_CASCADE", stub_cascade):
             for fixture_path in fixtures:
                 fixture_name = _fixture_stem(fixture_path)
@@ -538,6 +558,10 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
 
                     granted = detected_name == target_name
 
+                    total_checks += 1
+                    if not granted:
+                        deny_checks += 1
+
                     verdict = "GRANT" if granted else "DENY"
                     print(
                         f"[fixture-vs-prod-db] fixture_face={fixture_name!r} compared_to_qr_user={target_name!r} "
@@ -552,6 +576,9 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
                         self.assertTrue(granted)
                     else:
                         self.assertFalse(granted)
+
+        deny_pct = (deny_checks / total_checks * 100.0) if total_checks else 0.0
+        print(f"[fixture-vs-prod-db summary] DENY rate: {deny_pct:.2f}% ({deny_checks}/{total_checks})")
 
 
 if __name__ == "__main__":
