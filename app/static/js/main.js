@@ -168,12 +168,12 @@ async function loadAttempts() {
             const cardCountEl = document.getElementById('failedAttemptsCount');
             
             // Filter attempts from last 24 hours
-            const now = new Date();
-            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            //const now = new Date();
+            //const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
             
             const last24hAttempts = data.failed_attempts.filter(attempt => {
                 const attemptTime = new Date(attempt.created_at);
-                return attemptTime >= oneDayAgo;
+                return attemptTime
             });
             
             // Update both counters
