@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 from unittest.mock import patch
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -78,9 +79,17 @@ def _fixture_stem(path: str) -> str:
 
 
 def _load_face_image_200x200_gray(path: str) -> np.ndarray:
-    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    # cv2.imread() can fail on Windows when the path contains non-ASCII characters.
+    # Reading bytes + cv2.imdecode() is robust for Unicode filenames.
+    try:
+        data = Path(path).read_bytes()
+    except OSError as exc:
+        raise RuntimeError(f"Could not read image fixture bytes: {path}") from exc
+
+    buf = np.frombuffer(data, dtype=np.uint8)
+    img = cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
     if img is None:
-        raise RuntimeError(f"Could not read image fixture: {path}")
+        raise RuntimeError(f"Could not decode image fixture: {path}")
     return cv2.resize(img, (200, 200))
 
 
@@ -195,9 +204,7 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
             raise unittest.SkipTest(
                 "No face fixtures found. Add .jpg/.png/.jpeg files under tests/fixtures/faces/."
             )
-        print("[fixture] loadable fixtures:")
         for p in fixtures:
-            print(f"  - {p}")
             img = _load_face_image_200x200_gray(p)
             self.assertEqual(img.shape, (200, 200))
             self.assertEqual(img.dtype, np.uint8)
@@ -208,11 +215,9 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
             raise unittest.SkipTest(
                 "No face fixtures found. Add .jpg/.png/.jpeg files under tests/fixtures/faces/."
             )
-        print("[fixture] qr/db fixtures:")
         # Insert one employee per fixture and verify QR payload prefix finds the row.
         for fixture in fixtures:
             emp_name = _fixture_stem(fixture)
-            print(f"  - {fixture} -> emp_name={emp_name!r}")
             face = _load_face_image_200x200_gray(fixture)
             self._insert_employee(emp_name, face)
 
@@ -236,11 +241,9 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
             raise unittest.SkipTest(
                 "No face fixtures found. Add .jpg/.png/.jpeg files under tests/fixtures/faces/."
             )
-        print("[fixture] face-match fixtures:")
         for fixture in fixtures:
             emp_name = _fixture_stem(fixture)
             face = _load_face_image_200x200_gray(fixture)
-            print(f"  - {fixture} -> emp_name={emp_name!r}")
             self._insert_employee(emp_name, face)
             self._assert_employee_exists(emp_name)
 
@@ -272,7 +275,6 @@ class FacialRecognitionQrDbFlowTests(unittest.TestCase):
                 "No face fixtures found. Add .jpg/.png/.jpeg files under tests/fixtures/faces/."
             )
         fixture = fixtures[0]
-        print(f"[fixture] unknown-threshold test uses: {fixture}")
         face = _load_face_image_200x200_gray(fixture)
         self._insert_employee("Charlie", face)
 
