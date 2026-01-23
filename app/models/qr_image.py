@@ -27,9 +27,21 @@ unauthorized_access = Table(
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
+# Store authorized (successful) access events.
+# - emp_id / emp_name: who entered
+# - created_at: server timestamp
+good_entries = Table(
+    "good_entries",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("emp_id", Integer, nullable=True),
+    Column("emp_name", String(100), nullable=False),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+)
+
 def create_tables(engine):
     """Create the employees table in the target database."""
     metadata.create_all(engine)
 
 
-__all__ = ["employees", "unauthorized_access", "metadata", "create_tables"]
+__all__ = ["employees", "unauthorized_access", "good_entries", "metadata", "create_tables"]
