@@ -270,11 +270,15 @@ except Exception as e:
     camera_instance = None
 
 def find_employee_by_qr_data(qr_text: str) -> str:
+    # QR payload format: "<name>|<random_hash>" (older QR codes may be just "<name>")
+    employee_name = (qr_text or "").split("|", 1)[0].strip()
+    if not employee_name:
+        return "Not Found"
     db = SessionLocal()
     try:
         result = db.execute(
-            text("SELECT emp_name FROM employees WHERE emp_name LIKE :search"),
-            {"search": f"%{qr_text}%"}
+            text("SELECT emp_name FROM employees WHERE emp_name = :name"),
+            {"name": employee_name},
         ).first()
         
         if result:

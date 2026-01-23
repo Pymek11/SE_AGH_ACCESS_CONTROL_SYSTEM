@@ -1,23 +1,29 @@
 """QR Code generation utility."""
 import io
-import random
-import string
+import secrets
 import qrcode
 from qrcode.image.pure import PyPNGImage
 
 
-def generate_random_qr_data(length: int = 16) -> str:
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+def build_qr_payload(name: str) -> str:
+    """Build QR payload as: <name>|<random_hash>.
+
+    The random part is intentionally not used for DB lookup right now; lookup uses
+    the name prefix so older QR codes without the separator still work.
+    """
+    random_hash = secrets.token_hex(8)  # 16 hex chars
+    return f"{name}|{random_hash}"
 
 
-def generate_qr_code_blob(data: str) -> bytes:
+def generate_qr_code_blob(name: str) -> bytes:
+    payload = build_qr_payload(name)
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,
         border=4,
     )
-    qr.add_data(data)
+    qr.add_data(payload)
     qr.make(fit=True)
     
     # Create image and save to bytes buffer
@@ -28,14 +34,15 @@ def generate_qr_code_blob(data: str) -> bytes:
     return buffer.getvalue()
 
 
-def generate_qr_code_file(data: str, filepath: str) -> None:
+def generate_qr_code_file(name: str, filepath: str) -> None:
+    payload = build_qr_payload(name)
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,
         border=4,
     )
-    qr.add_data(data)
+    qr.add_data(payload)
     qr.make(fit=True)
     
     img = qr.make_image(fill_color="black", back_color="white")
