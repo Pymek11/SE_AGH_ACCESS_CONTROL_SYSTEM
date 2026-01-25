@@ -4,6 +4,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Załaduj listę użytkowników na starcie
     loadUsers();
     
+    // Load successful access count
+    loadSuccessfulAccessCount();
+    
+    // Add sorting event listeners
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.addEventListener('click', function() {
+            const column = this.getAttribute('data-column');
+            sortUsers(column);
+        });
+    });
+    
     // Załaduj listę nieudanych prób na starcie
     loadAttempts();
     
@@ -115,6 +126,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Global variables for sorting and pagination
+let usersData = [];
+let currentUserSort = { column: null, direction: 'asc' };
+let currentPage = 1;
+const itemsPerPage = 8;
+
 async function loadUsers() {
     try {
         const response = await fetch('/admin/users', {
@@ -125,32 +142,128 @@ async function loadUsers() {
         const data = await response.json();
         
         if (response.ok && data.users) {
-            const tbody = document.querySelector('table tbody');
-            const countEl = document.getElementById('employeeCount');
-            
-            if (countEl) countEl.textContent = data.users.length;
-
-            if (data.users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No users found</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.users.map(user => `
-                <tr>
-                    <td>${user.id}</td>
-                    <td>${user.name}</td>
-                    <td><i class="fas fa-check-circle text-success"></i> Active</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id}, '${user.name}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            usersData = data.users;
+            currentPage = 1;
+            renderUsers();
         }
     } catch (error) {
         console.error('Load users error:', error);
     }
+}
+
+function renderUsers() {
+    const tbody = document.getElementById('users-tbody');
+    const countEl = document.getElementById('employeeCount');
+    
+    if (countEl) countEl.textContent = usersData.length;
+
+    if (usersData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No users found</td></tr>';
+        return;
+    }
+
+    // Pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = usersData.slice(startIndex, endIndex);
+
+    tbody.innerHTML = paginatedData.map(user => `
+        <tr>
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td><i class="fas fa-check-circle text-success"></i> Active</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id}, '${user.name}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(usersData.length / itemsPerPage);
+    let paginationHtml = '';
+
+    if (totalPages > 1) {
+        paginationHtml = `
+            <nav aria-label="User table pagination">
+                <ul class="pagination justify-content-center mt-3">
+                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+            paginationHtml += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>`;
+        }
+
+        paginationHtml += `
+                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>`;
+    }
+
+    // Insert after the table
+    const tableContainer = document.querySelector('.table-responsive');
+    let paginationEl = tableContainer.querySelector('.pagination-nav');
+    if (!paginationEl) {
+        paginationEl = document.createElement('div');
+        paginationEl.className = 'pagination-nav';
+        tableContainer.appendChild(paginationEl);
+    }
+    paginationEl.innerHTML = paginationHtml;
+}
+
+function changePage(page) {
+    const totalPages = Math.ceil(usersData.length / itemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderUsers();
+}
+
+function sortUsers(column) {
+    if (currentUserSort.column === column) {
+        currentUserSort.direction = currentUserSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentUserSort.column = column;
+        currentUserSort.direction = 'asc';
+    }
+
+    // Update sort icons
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.classList.remove('asc', 'desc');
+    });
+    const activeTh = document.querySelector(`[data-column="${column}"]`);
+    activeTh.classList.add(currentUserSort.direction);
+
+    // Sort data
+    usersData.sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+
+        if (column === 'id') {
+            aVal = parseInt(aVal);
+            bVal = parseInt(bVal);
+        }
+
+        if (aVal < bVal) return currentUserSort.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return currentUserSort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    currentPage = 1;
+    renderUsers();
 }
 
 async function loadAttempts() {
@@ -216,5 +329,23 @@ async function deleteUser(id, name) {
         }
     } catch(e) {
         console.error(e);
+    }
+}
+
+async function loadSuccessfulAccessCount() {
+    try {
+        const response = await fetch('/admin/api/good-entries', {
+            headers: {
+                'Authorization': 'Basic ' + (sessionStorage.getItem('adminAuth') || btoa('admin:admin1'))
+            }
+        });
+        const data = await response.json();
+
+        if (response.ok && data.good_entries) {
+            const countEl = document.getElementById('successfulAccessCount');
+            if (countEl) countEl.textContent = data.good_entries.length;
+        }
+    } catch (error) {
+        console.error('Load successful access count error:', error);
     }
 }
