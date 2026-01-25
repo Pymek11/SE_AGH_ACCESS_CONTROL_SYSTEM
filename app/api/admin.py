@@ -222,4 +222,3 @@ async def get_good_entries(authorization: str = Header(None)):
         return {"good_entries": attempts}
     finally:
         db.close()
-@router.get('/api/access-denials')
