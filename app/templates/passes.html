@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Access Granted | Access Control</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <style>
+        /* Custom Styles for Dashboard Layout */
+        #sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background-color: #212529;
+            /* Darker than body for contrast */
+            padding-top: 1rem;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        .dashboard-link:hover {
+            background-color: #343a40;
+        }
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-success {
+            color: #198754;
+            /* green */
+        }
+
+        .status-fail {
+            color: #dc3545;
+            /* red */
+        }
+
+        /* Style for the small photo in the table */
+        .user-photo-sm {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+        }
+
+        /* Sorting styles */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        .sort-icon {
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+        .sortable:hover .sort-icon {
+            opacity: 1;
+        }
+        .sortable.asc .sort-icon:before {
+            content: ' ↑'; /* fa-sort-up */
+        }
+        .sortable.desc .sort-icon:before {
+            content: ' ↓'; /* fa-sort-down */
+        }
+
+        /* Pagination styles for dark theme */
+        .pagination .page-link {
+            background-color: #495057;
+            border-color: #6c757d;
+            color: #ffffff;
+        }
+        .pagination .page-link:hover {
+            background-color: #6c757d;
+            border-color: #adb5bd;
+            color: #ffffff;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .pagination .page-item.disabled .page-link {
+            background-color: #343a40;
+            border-color: #495057;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body class="d-flex bg-dark text-white">
+
+    <div id="sidebar" class="d-flex flex-column">
+        <h5 class="text-primary fw-bold px-3 mb-4">
+            <i class="fas fa-user-shield me-2"></i> Admin Panel
+        </h5>
+        <ul class="nav nav-pills flex-column mb-auto">
+            <li class="nav-item">
+                <a href="/dashboard" class="nav-link dashboard-link">
+                    <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/access-granted" class="nav-link active dashboard-link" aria-current="page">
+                    <i class="fas fa-check-circle me-2"></i> Passes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/admin/access-denials" class="nav-link dashboard-link">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Denials
+                </a>
+            </li>
+        </ul>
+        <hr class="mx-3 border-secondary">
+        <div class="dropdown mx-3 mb-3">
+            <a href="/" class="btn btn-outline-danger btn-sm w-100">
+                <i class="fas fa-sign-out-alt me-2"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <h1 class="mb-4 fw-light">Access Granted</h1>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card bg-secondary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle fa-3x status-success me-3"></i>
+                            <div>
+                                <h6 class="text-uppercase text-white mb-0">Total Successful Access</h6>
+                                <h2 class="display-5 fw-bold" id="totalPassesCount">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-secondary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clock fa-3x text-info me-3"></i>
+                            <div>
+                                <h6 class="text-uppercase text-white mb-0">Successful Access (24h)</h6>
+                                <h2 class="display-5 fw-bold" id="recentPassesCount">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-light mb-0">Successful Access Events</h3>
+        </div>
+
+        <div class="card bg-secondary shadow">
+            <div class="table-responsive">
+                <table id="passesTable" class="table table-dark table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="id">ID <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="sortable" data-column="created_at">Timestamp <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="sortable" data-column="emp_name">Employee Name <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="sortable" data-column="emp_id">Employee ID <i class="fas fa-sort sort-icon"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/passes.js"></script>
+</body>
+
+</html>
