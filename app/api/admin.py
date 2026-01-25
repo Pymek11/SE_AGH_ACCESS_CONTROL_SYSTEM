@@ -200,6 +200,26 @@ async def get_failed_attempts(authorization: str = Header(None)):
         return {"failed_attempts": attempts}
     finally:
         db.close()
+
 @router.get('/api/access-denials')
 async def get_access_denials(authorization: str = Header(None)):
     return FileResponse('app/templates/denials.html')
+
+@router.get('/api/good-entries')
+async def get_good_entries(authorization: str = Header(None)):
+    verify_admin_header(authorization)
+    db = SessionLocal()
+    try:
+        result = db.execute(text("SELECT * FROM good_entries")).fetchall()
+        attempts = [
+            {
+                "id": row[0],
+                "emp_id": row[1],
+                "qr_text": row[2],
+                "created_at": row[3]
+            } for row in result
+        ]
+        return {"good_entries": attempts}
+    finally:
+        db.close()
+@router.get('/api/access-denials')
