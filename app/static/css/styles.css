@@ -197,3 +197,20 @@ a:focus, button:focus, input:focus { outline: 3px solid rgba(59,130,246,0.12); o
 .checkmark::after { color: white; font-size: 50px; font-weight: bold; }
 @keyframes pulse { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
+.sortable {
+    cursor: pointer;
+    position: relative;
+}
+
+.sortable.asc::after {
+    content: ' ↑';
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+}
+
+.sortable.desc::after {
+    content: ' ↓';
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+}
+
