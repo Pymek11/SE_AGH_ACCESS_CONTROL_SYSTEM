@@ -32,10 +32,6 @@ async def read_facerec():
     print(f"✅ Face recognition page for: {camera_instance.target_employee}")
     return FileResponse('app/templates/facerec.html')
 
-@router.get('/dashboard')
-async def read_dashboard():
-    return FileResponse('app/templates/dashboard.html')
-
 
 @router.get('/accessgranted')
 async def read_accessgranted():
