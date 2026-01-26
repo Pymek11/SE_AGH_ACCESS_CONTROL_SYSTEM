@@ -53,7 +53,7 @@ The system is deployed as a **Local Web Application**, running as a server on a 
 | :--- | :--- | :--- | :--- |
 | **Backend Framework** | **FastAPI** | Python 3.10+ | High performance, excellent asynchronous support (`async/await`) essential for non-blocking operations. |
 | **Server** | **Uvicorn** | ASGI Server | Lightning-fast, production-grade server implementation for running FastAPI. |
-| **Frontend** | **HTML5, CSS3, JS (ES6+)** | Fetch API, (Tailwind/Bootstrap) | Standard web technologies for flexible UI, dynamic updates, and easy styling. |
+| **Frontend** | **HTML5, CSS3, JS (ES6+)** | Fetch API, Bootstrap | Standard web technologies for flexible UI, dynamic updates, and easy styling. |
 | **Computer Vision** | **OpenCV** | Python Library | Captures camera frames and streams them efficiently to the browser using **MJPEG** over HTTP. |
 | **Biometrics/QR** | **face\_recognition, pyzbar** | Python Libraries | Executes verification logic securely on the backend before sending results to the frontend. |
 | **Database/ORM** | **SQLite + SQLAlchemy** | File-based DB + Python ORM | **SQLite** is lightweight and zero-configuration; **SQLAlchemy** provides safe, object-oriented database interaction. |
