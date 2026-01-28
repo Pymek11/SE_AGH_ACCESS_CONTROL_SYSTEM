@@ -90,6 +90,38 @@
             border-color: #495057;
             color: #6c757d;
         }
+
+        /* Table column sizing */
+        #denialsTable thead th:nth-child(1),
+        #denialsTable tbody td:nth-child(1) {
+            width: 10%;
+        }
+        #denialsTable thead th:nth-child(2),
+        #denialsTable tbody td:nth-child(2) {
+            width: 30%;
+        }
+        #denialsTable thead th:nth-child(3),
+        #denialsTable tbody td:nth-child(3) {
+            width: 45%;
+            word-break: break-word;
+        }
+        #denialsTable thead th:nth-child(4),
+        #denialsTable tbody td:nth-child(4) {
+            width: 15%;
+            text-align: center;
+        }
+
+        /* Image styling in table */
+        #denialsTable img {
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
     </style>
 </head>
 
@@ -101,7 +133,7 @@
         </h5>
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
-                <a href="/dashboard" class="nav-link dashboard-link">
+                <a href="/admin/dashboard" class="nav-link dashboard-link">
                     <i class="fas fa-tachometer-alt me-2"></i> Dashboard
                 </a>
             </li>
