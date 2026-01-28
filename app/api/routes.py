@@ -10,7 +10,15 @@ router = APIRouter()
 
 @router.get('/')
 async def read_root():
-    return FileResponse('app/templates/index.html')
+    if camera_instance:
+        camera_instance.reset_to_idle()
+
+    response = FileResponse('app/templates/index.html')
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    
+    return response
 
 
 @router.get('/login')

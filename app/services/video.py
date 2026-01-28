@@ -293,7 +293,7 @@ def _log_unauthorized_access(qr_text: str | None, frame_bgr: np.ndarray) -> None
         ok, buffer = cv2.imencode('.jpg', frame_bgr)
         photo_bytes = buffer.tobytes() if ok else None
         stmt = insert(unauthorized_access).values(
-            qr_text=qr_text,
+            qr_text=find_employee_by_qr_data(qr_text),
             photo=photo_bytes,
         )
         db.execute(stmt)
